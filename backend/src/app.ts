@@ -1,0 +1,56 @@
+import "dotenv/config";
+import express from "express";
+import cors from "cors";
+import helmet from "helmet";
+import morgan from "morgan";
+import cookieParser from "cookie-parser";
+import connectDB from "./config/db";
+import { errorHandler } from "./middleware/error.middleware";
+
+// ── Routes ───────────────────────────────────────────────────
+import authRoutes from "./routes/auth.routes";
+import workerRoutes from "./routes/worker.routes";
+
+const app = express();
+const PORT = process.env.PORT || 5000;
+
+// ── Connect Database ─────────────────────────────────────────
+connectDB();
+
+// ── Global Middleware ────────────────────────────────────────
+app.use(helmet());
+app.use(
+  cors({
+    origin: process.env.CLIENT_URL || "http://localhost:3000",
+    credentials: true, // allow cookies
+  })
+);
+app.use(morgan("dev"));
+app.use(express.json());
+app.use(express.urlencoded({ extended: true }));
+app.use(cookieParser());
+
+// ── Health Check ─────────────────────────────────────────────
+app.get("/api/health", (_req, res) => {
+  res.json({ success: true, message: "Fework API is running 🚀" });
+});
+
+// ── API Routes ───────────────────────────────────────────────
+app.use("/api/auth", authRoutes);
+app.use("/api/workers", workerRoutes);
+
+// ── 404 Handler ──────────────────────────────────────────────
+app.use((_req, res) => {
+  res.status(404).json({ success: false, message: "Route not found." });
+});
+
+// ── Global Error Handler ─────────────────────────────────────
+app.use(errorHandler);
+
+// ── Start Server ─────────────────────────────────────────────
+app.listen(PORT, () => {
+  console.log(`\n🚀 Fework API running on http://localhost:${PORT}`);
+  console.log(`📌 Environment: ${process.env.NODE_ENV}`);
+});
+
+export default app;
