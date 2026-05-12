@@ -1,8 +1,7 @@
 "use client";
 
-import React, { useState } from "react";
+import React from "react";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
 import {
   Search,
@@ -24,9 +23,8 @@ import {
   TrendingUp,
   Award
 } from "lucide-react";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-import HeroSearch from "@/components/HeroSearch";
+import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/layout/Footer";
 
 const categories = [
   { name: "Electrician", icon: Zap },
@@ -147,9 +145,6 @@ const spotlightCards = [
 ];
 
 export default function LandingPage() {
-  const router = useRouter();
-  const navigateSearch = (term: string) => router.push(`/findservices?search=${encodeURIComponent(term)}`);
-
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
       <Navbar />
@@ -179,8 +174,21 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
+              className="relative max-w-2xl mx-auto mb-6"
             >
-              <HeroSearch />
+              <div className="bg-white rounded-full p-2 flex items-center shadow-2xl">
+                <div className="pl-6 flex items-center gap-3 flex-grow">
+                  <Search className="text-gray-400" size={20} />
+                  <input
+                    type="text"
+                    placeholder="What service do you need today?"
+                    className="w-full bg-transparent border-none focus:ring-0 text-gray-900 placeholder:text-gray-400 py-3 text-lg"
+                  />
+                </div>
+                <button className="bg-[#006D77] text-white px-8 py-3 rounded-full font-bold hover:bg-[#005a63] transition-all">
+                  Search
+                </button>
+              </div>
             </motion.div>
 
             <motion.div
@@ -190,15 +198,9 @@ export default function LandingPage() {
               className="flex flex-wrap justify-center gap-3 text-white/60 text-sm"
             >
               <span>Popular:</span>
-              {["Electrician", "House Cleaning", "AC Maintenance", "Plumber"].map(term => (
-                <button
-                  key={term}
-                  onClick={() => navigateSearch(term)}
-                  className="hover:text-white transition-colors underline decoration-white/20 underline-offset-4"
-                >
-                  {term}
-                </button>
-              ))}
+              <button className="hover:text-white transition-colors underline decoration-white/20 underline-offset-4">Electrician</button>
+              <button className="hover:text-white transition-colors underline decoration-white/20 underline-offset-4">House Cleaning</button>
+              <button className="hover:text-white transition-colors underline decoration-white/20 underline-offset-4">AC Maintenance</button>
             </motion.div>
           </div>
         </section>
@@ -210,7 +212,7 @@ export default function LandingPage() {
               <h2 className="text-2xl font-bold text-[#0F172A] mb-2">Service Categories</h2>
               <p className="text-gray-500">Professional solutions for every home need</p>
             </div>
-            <Link href="/findservices" className="text-[#006D77] font-bold flex items-center gap-1 hover:underline">
+            <Link href="#" className="text-[#006D77] font-bold flex items-center gap-1 hover:underline">
               View All <ArrowRight size={18} />
             </Link>
           </div>
@@ -220,7 +222,6 @@ export default function LandingPage() {
               <motion.div
                 key={i}
                 whileHover={{ y: -4 }}
-                onClick={() => navigateSearch(cat.name)}
                 className="bg-white border border-gray-100 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 hover:shadow-lg transition-all cursor-pointer group"
               >
                 <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center text-[#006D77] group-hover:bg-[#006D77] group-hover:text-white transition-all">
@@ -255,9 +256,9 @@ export default function LandingPage() {
                         {card.subtitle}
                       </p>
                     </div>
-                    <Link href="/findservices" className={`${card.isDark ? 'bg-white text-black' : 'bg-black text-white'} px-6 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all text-center`}>
+                    <button className={`${card.isDark ? 'bg-white text-black' : 'bg-black text-white'} px-6 py-2.5 rounded-xl font-bold text-sm hover:opacity-90 transition-all`}>
                       {card.cta}
-                    </Link>
+                    </button>
                   </div>
                   <div className="w-1/2 h-full relative">
                     <img src={card.image} alt={card.title} className="w-full h-full object-cover" />
@@ -418,11 +419,10 @@ export default function LandingPage() {
             </div>
           </div>
         </section>
-
         <section className="py-20 px-6 max-w-7xl mx-auto">
           <div className="flex justify-between items-end mb-10">
             <h2 className="text-3xl font-bold text-[#0F172A]">Appliance repair & service</h2>
-            <Link href="/findservices" className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-100 transition-all">
+            <Link href="#" className="px-4 py-2 bg-gray-50 border border-gray-200 rounded-lg text-sm font-bold text-gray-700 hover:bg-gray-100 transition-all">
               See all
             </Link>
           </div>
@@ -432,7 +432,6 @@ export default function LandingPage() {
               <motion.div
                 key={i}
                 whileHover={{ y: -5 }}
-                onClick={() => navigateSearch(service.name)}
                 className="group cursor-pointer"
               >
                 <div className="aspect-square rounded-2xl overflow-hidden mb-4 border border-gray-100">
@@ -500,7 +499,6 @@ export default function LandingPage() {
             </div>
           </motion.div>
         </section>
-
         <section className="py-12 px-6 max-w-7xl mx-auto">
           <motion.div 
             initial={{ opacity: 0, scale: 0.98 }}

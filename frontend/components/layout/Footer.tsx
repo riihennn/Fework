@@ -45,3 +45,5 @@ export const Footer = ({ className }: FooterProps) => {
     </footer>
   );
 };
+
+export default Footer;
