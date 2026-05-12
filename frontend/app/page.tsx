@@ -2,7 +2,9 @@
 
 import React from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
+import HeroSearch from "@/components/HeroSearch";
 import {
   Search,
   Zap,
@@ -145,6 +147,8 @@ const spotlightCards = [
 ];
 
 export default function LandingPage() {
+  const router = useRouter();
+  const navigateSearch = (term: string) => router.push(`/findservices?search=${encodeURIComponent(term)}`);
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
       <Navbar />
@@ -174,33 +178,26 @@ export default function LandingPage() {
               initial={{ opacity: 0, y: 20 }}
               animate={{ opacity: 1, y: 0 }}
               transition={{ delay: 0.1 }}
-              className="relative max-w-2xl mx-auto mb-6"
             >
-              <div className="bg-white rounded-full p-2 flex items-center shadow-2xl">
-                <div className="pl-6 flex items-center gap-3 flex-grow">
-                  <Search className="text-gray-400" size={20} />
-                  <input
-                    type="text"
-                    placeholder="What service do you need today?"
-                    className="w-full bg-transparent border-none focus:ring-0 text-gray-900 placeholder:text-gray-400 py-3 text-lg"
-                  />
-                </div>
-                <button className="bg-[#006D77] text-white px-8 py-3 rounded-full font-bold hover:bg-[#005a63] transition-all">
-                  Search
-                </button>
-              </div>
+              <HeroSearch />
             </motion.div>
 
             <motion.div
               initial={{ opacity: 0 }}
               animate={{ opacity: 1 }}
-              transition={{ delay: 0.2 }}
+              transition={{ delay: 0.25 }}
               className="flex flex-wrap justify-center gap-3 text-white/60 text-sm"
             >
-              <span>Popular:</span>
-              <button className="hover:text-white transition-colors underline decoration-white/20 underline-offset-4">Electrician</button>
-              <button className="hover:text-white transition-colors underline decoration-white/20 underline-offset-4">House Cleaning</button>
-              <button className="hover:text-white transition-colors underline decoration-white/20 underline-offset-4">AC Maintenance</button>
+              <span className="text-white/40">Popular:</span>
+              {["Electrician", "House Cleaning", "AC Maintenance", "Plumber"].map(term => (
+                <button
+                  key={term}
+                  onClick={() => navigateSearch(term)}
+                  className="hover:text-white transition-colors underline decoration-white/20 underline-offset-4 hover:decoration-white/60"
+                >
+                  {term}
+                </button>
+              ))}
             </motion.div>
           </div>
         </section>

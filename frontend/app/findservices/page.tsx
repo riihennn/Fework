@@ -239,12 +239,18 @@ export default function FindServicePage() {
 
                 {/* Actions */}
                 <div className="w-full md:w-56 flex flex-col gap-3">
-                  <button className="w-full py-4 bg-[#0F172A] text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-gray-800 transition-all shadow-xl shadow-gray-200">
+                  <Link
+                    href={`/findservices/${worker._id}`}
+                    className="w-full py-4 bg-[#0F172A] text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-gray-800 transition-all shadow-xl shadow-gray-200 text-center block"
+                  >
                     Book Now
-                  </button>
-                  <button className="w-full py-4 border-2 border-gray-100 text-[#0F172A] rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-gray-50 transition-all">
+                  </Link>
+                  <Link
+                    href={`/findservices/${worker._id}`}
+                    className="w-full py-4 border-2 border-gray-100 text-[#0F172A] rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-gray-50 transition-all text-center block"
+                  >
                     View Profile
-                  </button>
+                  </Link>
                   <div className="flex items-center justify-center gap-1.5 text-teal-600 font-black text-[9px] uppercase tracking-widest mt-2">
                     <Clock size={12} /> Available Now
                   </div>
