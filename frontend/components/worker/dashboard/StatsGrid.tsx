@@ -35,7 +35,7 @@ export default function StatsGrid({ stats }: StatsGridProps) {
           <div className={`w-12 h-12 rounded-2xl flex items-center justify-center mb-6 ${stat.color} transition-transform duration-500`}>
             <stat.icon size={22} />
           </div>
-          <div className="text-3xl font-black text-[#0F172A] tracking-tight mb-1">{stat.value}</div>
+          <div className="text-2xl font-bold text-[#0F172A] tracking-tight mb-1">{stat.value}</div>
           <div className="text-[10px] font-black text-gray-400 uppercase tracking-[0.2em]">{stat.label}</div>
           <div className="flex items-center gap-1.5 mt-4">
             <span className="text-[11px] font-black text-teal-600 bg-teal-50 px-2 py-0.5 rounded-full">{stat.change}</span>

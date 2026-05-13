@@ -22,8 +22,8 @@ export default function DashboardHeader({ user, activeSection, setSidebarOpen, p
           <Menu size={20} />
         </button>
         <div>
-          <h1 className="text-xl font-black text-[#0F172A] tracking-tight capitalize">{activeSection}</h1>
-          <p className="text-[10px] text-gray-400 font-black uppercase tracking-[0.2em] mt-0.5">
+          <h1 className="text-2xl font-bold text-[#0F172A] tracking-tight capitalize">{activeSection}</h1>
+          <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-0.5">
             Welcome back, <span className="text-teal-600">{user?.name?.split(" ")[0] || "Worker"}</span>
           </p>
         </div>

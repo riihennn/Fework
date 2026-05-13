@@ -44,7 +44,7 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
           <div className="hidden lg:flex items-center gap-8 text-sm font-medium text-gray-600">
             <Link href="/findservices" className="hover:text-[#0F172A] transition-colors">Find Services</Link>
             <Link href="#" className="hover:text-[#0F172A] transition-colors">Memberships</Link>
-            <Link href="#" className="hover:text-[#0F172A] transition-colors">Help</Link>
+            <Link href="/help" className="hover:text-[#0F172A] transition-colors">Help</Link>
           </div>
         )}
       </div>
@@ -65,7 +65,6 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
             >
               <div className="hidden md:flex flex-col items-end">
                 <span className="text-xs font-bold text-[#0F172A]">{user?.name || user?.email?.split("@")[0]}</span>
-                <span className="text-[10px] text-gray-500 capitalize leading-tight">{user?.role}</span>
               </div>
               <div className="h-9 w-9 flex items-center justify-center rounded-xl bg-gray-100 text-[#0F172A] border border-gray-200">
                 <UserCircle size={22} />

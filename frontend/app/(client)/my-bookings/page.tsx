@@ -7,7 +7,7 @@ import {
   Zap, User, Banknote, CheckCircle2, AlertTriangle, FileText,
   Phone, Star, ChevronRight, X
 } from "lucide-react";
-import { bookingApi, BookingJob, JobStatus } from "@/services/api";
+import { bookingApi, reviewApi, BookingJob } from "@/services/api";
 
 // ─── Status Config ──────────────────────────────────────────────────────
 const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string; dot: string; desc: string }> = {
@@ -28,10 +28,12 @@ function ApprovalModal({
   job,
   onClose,
   onDone,
+  onApproved,
 }: {
   job: BookingJob;
   onClose: () => void;
   onDone: () => void;
+  onApproved: (jobId: string) => void;
 }) {
   const [action, setAction] = useState<"approve" | "dispute" | null>(null);
   const [note, setNote] = useState("");
@@ -42,7 +44,11 @@ function ApprovalModal({
     setLoading(true);
     try {
       await bookingApi.approveJob(job._id, action, note || undefined);
-      onDone();
+      if (action === "approve") {
+        onApproved(job._id);
+      } else {
+        onDone();
+      }
       onClose();
     } catch (e: any) {
       alert(e.message);
@@ -164,11 +170,111 @@ function ApprovalModal({
   );
 }
 
+// ─── Review Modal ────────────────────────────────────────────────────────
+function ReviewModal({
+  jobId, onClose, onDone
+}: { jobId: string; onClose: () => void; onDone: () => void }) {
+  const [rating, setRating] = useState(0);
+  const [hovered, setHovered] = useState(0);
+  const [comment, setComment] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!rating) return;
+    setLoading(true);
+    try {
+      await reviewApi.submit(jobId, rating, comment || undefined);
+      setSubmitted(true);
+      setTimeout(() => { onDone(); onClose(); }, 1500);
+    } catch (e: any) { alert(e.message); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+      <motion.div
+        initial={{ opacity: 0, scale: 0.95, y: 20 }}
+        animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="bg-white rounded-[32px] shadow-2xl border border-gray-100 w-full max-w-md p-8"
+      >
+        {submitted ? (
+          <div className="text-center py-4">
+            <div className="w-16 h-16 rounded-full bg-teal-50 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 size={32} className="text-teal-500" />
+            </div>
+            <h3 className="text-xl font-black text-[#0F172A] mb-1">Thank you!</h3>
+            <p className="text-sm text-gray-400">Your review has been submitted.</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-black text-[#0F172A]">Rate Your Experience</h3>
+                <p className="text-xs text-gray-400 mt-0.5">How was the service?</p>
+              </div>
+              <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-400">
+                <X size={16} />
+              </button>
+            </div>
+
+            {/* Star selector */}
+            <div className="flex items-center justify-center gap-3 mb-6">
+              {[1,2,3,4,5].map(s => (
+                <button key={s}
+                  onMouseEnter={() => setHovered(s)}
+                  onMouseLeave={() => setHovered(0)}
+                  onClick={() => setRating(s)}
+                  className="transition-transform hover:scale-110"
+                >
+                  <Star
+                    size={36}
+                    className={`transition-colors ${
+                      s <= (hovered || rating) ? "fill-amber-400 text-amber-400" : "text-gray-200"
+                    }`}
+                  />
+                </button>
+              ))}
+            </div>
+            <p className="text-center text-xs text-gray-400 mb-6">
+              {rating === 0 ? "Tap a star to rate" : ["Poor","Fair","Good","Very Good","Excellent!"][rating-1]}
+            </p>
+
+            {/* Comment */}
+            <textarea
+              value={comment}
+              onChange={e => setComment(e.target.value)}
+              placeholder="Share your experience (optional)..."
+              rows={3}
+              className="w-full border border-gray-200 rounded-2xl p-4 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-400 transition-all mb-6"
+            />
+
+            <button
+              onClick={handleSubmit}
+              disabled={!rating || loading}
+              className="w-full h-12 rounded-2xl bg-teal-600 hover:bg-teal-700 text-white text-sm font-bold transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2"
+            >
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <><Star size={16} />Submit Review</>}
+            </button>
+          </>
+        )}
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Booking Card ──────────────────────────────────────────────────────
 function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => void }) {
   const [showModal, setShowModal] = useState(false);
+  const [showReview, setShowReview] = useState(false);
   const meta = STATUS_META[job.status] || STATUS_META[""];
   const workerUser = typeof job.worker === "object" ? (job.worker as any)?.user : null;
+
+  const handleApproved = (jobId: string) => {
+    onRefresh();
+    setShowReview(true); // Auto-open review modal after approval
+  };
 
   return (
     <>
@@ -262,10 +368,17 @@ function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => voi
                 <p className="text-sm font-bold text-teal-700">Payment Confirmed</p>
                 <p className="text-xs text-teal-600">Cash was paid to the worker on {new Date(job.clientApproval?.approvedAt || job.updatedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
               </div>
-              <div className="ml-auto">
-                <button className="h-8 px-3 rounded-xl bg-teal-100 text-teal-700 text-xs font-bold hover:bg-teal-200 transition-all flex items-center gap-1.5">
-                  <Star size={12} />Rate
-                </button>
+              <div className="ml-auto shrink-0">
+                {!job.reviewed ? (
+                  <button onClick={() => setShowReview(true)}
+                    className="h-8 px-3 rounded-xl bg-teal-100 text-teal-700 text-xs font-bold hover:bg-teal-200 transition-all flex items-center gap-1.5">
+                    <Star size={12} />Rate Worker
+                  </button>
+                ) : (
+                  <span className="flex items-center gap-1 text-xs text-teal-500 font-bold">
+                    <Star size={12} className="fill-amber-400 text-amber-400" />Reviewed
+                  </span>
+                )}
               </div>
             </div>
           )}
@@ -308,7 +421,21 @@ function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => voi
       </motion.div>
 
       <AnimatePresence>
-        {showModal && <ApprovalModal job={job} onClose={() => setShowModal(false)} onDone={onRefresh} />}
+        {showModal && (
+          <ApprovalModal
+            job={job}
+            onClose={() => setShowModal(false)}
+            onDone={onRefresh}
+            onApproved={handleApproved}
+          />
+        )}
+        {showReview && (
+          <ReviewModal
+            jobId={job._id}
+            onClose={() => setShowReview(false)}
+            onDone={onRefresh}
+          />
+        )}
       </AnimatePresence>
     </>
   );

@@ -1,12 +1,13 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import {
   CheckCircle2, ChevronLeft, ChevronRight, Clock,
-  Zap, Loader2, MapPin, FileText, AlertCircle
+  Zap, Loader2, MapPin, FileText, AlertCircle, Navigation
 } from "lucide-react";
 import { WorkerPublic, bookingApi } from "@/services/api";
+import { useAuthStore } from "@/store/authStore";
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const DAYS   = ["M","T","W","T","F","S","S"];
@@ -31,19 +32,35 @@ function slotToDate(year: number, month: number, day: number, slot: string): str
 }
 
 export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
+  const { user } = useAuthStore();
   const now = new Date();
-  const [calYear,    setCalYear]    = useState(now.getFullYear());
-  const [calMonth,   setCalMonth]   = useState(now.getMonth());
-  const [selDay,     setSelDay]     = useState<number | null>(null);
-  const [selSlot,    setSelSlot]    = useState<string | null>(null);
-  const [service,    setService]    = useState(worker.category || "");
-  const [description,setDescription]= useState("");
-  const [location,   setLocation]   = useState(worker.city || "");
-  const [isUrgent,   setIsUrgent]   = useState(false);
-  const [loading,    setLoading]    = useState(false);
-  const [booked,     setBooked]     = useState(false);
-  const [error,      setError]      = useState<string | null>(null);
-  const [step,       setStep]       = useState<1 | 2>(1); // 1=details, 2=calendar
+
+  const [calYear,     setCalYear]    = useState(now.getFullYear());
+  const [calMonth,    setCalMonth]   = useState(now.getMonth());
+  const [selDay,      setSelDay]     = useState<number | null>(null);
+  const [selSlot,     setSelSlot]    = useState<string | null>(null);
+  const [service,     setService]    = useState("");
+  const [description, setDescription]= useState("");
+  const [location,    setLocation]   = useState("");
+  const [isUrgent,    setIsUrgent]   = useState(false);
+  const [loading,     setLoading]    = useState(false);
+  const [gpsLoading,  setGpsLoading] = useState(false);
+  const [booked,      setBooked]     = useState(false);
+  const [error,       setError]      = useState<string | null>(null);
+  const [step,        setStep]       = useState<1 | 2>(1);
+
+  // Build the service options: worker's skills + category (deduplicated)
+  const serviceOptions = Array.from(new Set([
+    ...(worker.skills?.length ? worker.skills : []),
+    ...(worker.category ? [worker.category] : []),
+  ])).filter(Boolean);
+
+  // Pre-fill location from client's saved city
+  useEffect(() => {
+    if (user?.city) {
+      setLocation(user.city);
+    }
+  }, [user?.city]);
 
   const calDays = getCalendarDays(calYear, calMonth);
 
@@ -56,7 +73,43 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
     else setCalMonth(m => m + 1);
   };
 
-  const canProceed = service.trim().length > 0 && description.trim().length >= 3 && location.trim().length > 0;
+  // GPS location detection
+  const handleUseMyLocation = () => {
+    if (!navigator.geolocation) {
+      setError("Geolocation is not supported by your browser.");
+      return;
+    }
+    setGpsLoading(true);
+    navigator.geolocation.getCurrentPosition(
+      async (pos) => {
+        const { latitude, longitude } = pos.coords;
+        try {
+          const res = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?lat=${latitude}&lon=${longitude}&format=json`
+          );
+          const data = await res.json();
+          const city =
+            data.address?.city ||
+            data.address?.town ||
+            data.address?.village ||
+            data.address?.county ||
+            "";
+          const road = data.address?.road || data.address?.suburb || "";
+          setLocation(road ? `${road}, ${city}` : city || `${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+        } catch {
+          setLocation(`${latitude.toFixed(4)}, ${longitude.toFixed(4)}`);
+        } finally {
+          setGpsLoading(false);
+        }
+      },
+      () => {
+        setGpsLoading(false);
+        setError("Could not detect location. Please enter it manually.");
+      }
+    );
+  };
+
+  const canProceed = service.length > 0 && description.trim().length >= 3 && location.trim().length > 0;
   const canBook = selDay !== null && selSlot !== null;
 
   const handleBooking = async () => {
@@ -64,7 +117,7 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
     setLoading(true);
     setError(null);
     try {
-      const payload = {
+      await bookingApi.create({
         workerId: worker._id,
         service: service.trim(),
         description: description.trim(),
@@ -72,13 +125,9 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
         scheduledAt: slotToDate(calYear, calMonth, selDay, selSlot),
         estimatedPay: worker.hourlyRate || 0,
         isUrgent,
-      };
-      
-      console.log("[BookingPanel] Sending request:", payload);
-      await bookingApi.create(payload);
+      });
       setBooked(true);
     } catch (e: any) {
-      console.error("[BookingPanel] Error:", e);
       setError(e.message || "Booking failed. Please check if you are logged in as a Client.");
     } finally {
       setLoading(false);
@@ -87,7 +136,7 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
 
   const handleReset = () => {
     setBooked(false); setSelSlot(null); setSelDay(null);
-    setStep(1); setError(null); setDescription("");
+    setStep(1); setError(null); setDescription(""); setService("");
   };
 
   return (
@@ -129,15 +178,43 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
               {/* ── Step 1: Job Details ── */}
               {step === 1 && (
                 <motion.div key="step1" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }} className="space-y-4">
+
+                  {/* ── Service Skill Selector ── */}
                   <div>
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Service Needed</label>
-                    <input
-                      value={service}
-                      onChange={e => setService(e.target.value)}
-                      placeholder="e.g. AC Repair, Plumbing Fix"
-                      className="w-full px-4 py-3 rounded-2xl border border-gray-100 text-sm font-bold text-[#0F172A] placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-300 transition-all"
-                    />
+                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-3 block">
+                      Select Service Needed
+                    </label>
+                    {serviceOptions.length > 0 ? (
+                      <div className="flex flex-wrap gap-2">
+                        {serviceOptions.map((skill) => (
+                          <button
+                            key={skill}
+                            type="button"
+                            onClick={() => setService(skill)}
+                            className={`px-4 py-2 rounded-xl text-xs font-bold border transition-all capitalize ${
+                              service === skill
+                                ? "bg-[#0F172A] text-white border-[#0F172A] shadow-md"
+                                : "bg-gray-50 text-gray-600 border-gray-100 hover:border-teal-300 hover:bg-teal-50 hover:text-teal-700"
+                            }`}
+                          >
+                            {skill}
+                          </button>
+                        ))}
+                      </div>
+                    ) : (
+                      <input
+                        value={service}
+                        onChange={e => setService(e.target.value)}
+                        placeholder="e.g. AC Repair, Plumbing Fix"
+                        className="w-full px-4 py-3 rounded-2xl border border-gray-100 text-sm font-bold text-[#0F172A] placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-300 transition-all"
+                      />
+                    )}
+                    {serviceOptions.length > 0 && !service && (
+                      <p className="text-[10px] text-rose-400 font-bold mt-2">Please select a service above</p>
+                    )}
                   </div>
+
+                  {/* ── Description ── */}
                   <div>
                     <div className="flex justify-between items-center mb-2">
                       <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest block">Description</label>
@@ -153,10 +230,26 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
                       className="w-full px-4 py-3 rounded-2xl border border-gray-100 text-sm font-bold text-[#0F172A] placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-300 transition-all resize-none"
                     />
                   </div>
+
+                  {/* ── Location ── */}
                   <div>
-                    <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2 block">Your Location</label>
+                    <div className="flex justify-between items-center mb-2">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Your Location</label>
+                      <button
+                        type="button"
+                        onClick={handleUseMyLocation}
+                        disabled={gpsLoading}
+                        className="flex items-center gap-1 text-[10px] font-black text-teal-600 hover:text-teal-700 uppercase tracking-wider disabled:opacity-50 transition-colors"
+                      >
+                        {gpsLoading
+                          ? <Loader2 size={11} className="animate-spin" />
+                          : <Navigation size={11} />
+                        }
+                        {gpsLoading ? "Detecting…" : "Use My Location"}
+                      </button>
+                    </div>
                     <div className="relative">
-                      <MapPin size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-300" />
+                      <MapPin size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-teal-400" />
                       <input
                         value={location}
                         onChange={e => setLocation(e.target.value)}
@@ -164,7 +257,14 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
                         className="w-full pl-10 pr-4 py-3 rounded-2xl border border-gray-100 text-sm font-bold text-[#0F172A] placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-300 transition-all"
                       />
                     </div>
+                    {user?.city && location === user.city && (
+                      <p className="text-[10px] text-teal-500 font-bold mt-1.5 flex items-center gap-1">
+                        <CheckCircle2 size={10} /> Using your registered city — you can change this
+                      </p>
+                    )}
                   </div>
+
+                  {/* ── Urgent Toggle ── */}
                   <label className="flex items-center gap-3 cursor-pointer select-none">
                     <div
                       onClick={() => setIsUrgent(u => !u)}
@@ -179,6 +279,7 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
                       <p className="text-[10px] text-gray-400 font-bold">Priority handling — may incur additional fee</p>
                     </div>
                   </label>
+
                   <button
                     onClick={() => setStep(2)}
                     disabled={!canProceed}
@@ -186,7 +287,7 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
                       canProceed ? "bg-[#0F172A] text-white hover:bg-gray-800 shadow-xl shadow-gray-200" : "bg-gray-100 text-gray-300 cursor-not-allowed"
                     }`}
                   >
-                    Choose Date & Time →
+                    Choose Date &amp; Time →
                   </button>
                 </motion.div>
               )}
@@ -202,8 +303,10 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
                   <div className="bg-gray-50 rounded-2xl px-4 py-3 flex items-center gap-3 mb-2">
                     <FileText size={14} className="text-teal-500 shrink-0" />
                     <div className="min-w-0">
-                      <div className="text-[11px] font-black text-[#0F172A] uppercase tracking-widest truncate">{service}</div>
-                      <div className="text-[10px] text-gray-400 font-bold truncate">{location}</div>
+                      <div className="text-[11px] font-black text-[#0F172A] uppercase tracking-widest truncate capitalize">{service}</div>
+                      <div className="text-[10px] text-gray-400 font-bold truncate flex items-center gap-1">
+                        <MapPin size={9} className="text-teal-400" />{location}
+                      </div>
                     </div>
                     {isUrgent && <span className="ml-auto shrink-0 px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 text-[9px] font-black border border-rose-100">Urgent</span>}
                   </div>
@@ -268,7 +371,6 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
                     </motion.div>
                   )}
 
-                  {/* Estimated pay */}
                   <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-2xl">
                     <span className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Estimated Pay</span>
                     <span className="text-lg font-black text-[#0F172A]">₹{worker.hourlyRate}/hr</span>

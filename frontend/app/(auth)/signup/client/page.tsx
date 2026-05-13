@@ -53,7 +53,15 @@ export default function ClientSignup() {
   const handleComplete = async () => {
     clearError();
     try {
-      await register(formData.fullName, formData.email, formData.password, "client");
+      await register(
+        formData.fullName,
+        formData.email,
+        formData.password,
+        "client",
+        formData.phone || undefined,
+        undefined, // no worker profile
+        formData.city || undefined
+      );
       router.push("/"); // Redirect to home after successful signup
     } catch {
       // error is set in the store

@@ -30,7 +30,7 @@ export default function RecentJobs({ jobs }: RecentJobsProps) {
     <div className="bg-white rounded-[40px] border border-gray-100 p-10 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
       <div className="flex items-center justify-between mb-10">
         <div>
-          <h2 className="text-2xl font-black text-[#0F172A] tracking-tight">Recent Activity</h2>
+          <h2 className="text-2xl font-bold text-[#0F172A] tracking-tight">Recent Activity</h2>
           <p className="text-xs text-gray-400 font-black uppercase tracking-widest mt-1">Live tracking of your latest jobs</p>
         </div>
         <Link

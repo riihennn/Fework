@@ -58,7 +58,7 @@ export default function DashboardSidebar({
       >
         {/* Logo */}
         <div className="px-8 py-8">
-          <Link href="/" className="text-2xl font-black text-[#0F172A] tracking-tighter flex items-center gap-0.5">
+          <Link href="/" className="text-2xl font-bold text-[#0F172A] tracking-tighter flex items-center gap-0.5">
             Fework<span className="w-1.5 h-1.5 rounded-full bg-teal-500 mt-2" />
           </Link>
           <p className="text-gray-400 text-[10px] font-black uppercase tracking-[0.2em] mt-1.5">Worker Portal</p>

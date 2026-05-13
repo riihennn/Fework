@@ -1,6 +1,6 @@
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "../types";
-import Job from "../models/Job.model";
+import Job from "../models/Booking.model";
 import Worker from "../models/Worker.model";
 import { sseService } from "../services/sse.service";
 import { sendSuccess, sendError } from "../utils/response.utils";

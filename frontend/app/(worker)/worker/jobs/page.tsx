@@ -8,6 +8,7 @@ import {
   MessageSquare, User, Banknote, FileText, Send
 } from "lucide-react";
 import { bookingApi, BookingJob, JobStatus } from "@/services/api";
+import StatusErrorModal from "@/components/worker/dashboard/StatusErrorModal";
 
 // ─── Status Config ─────────────────────────────────────────────────────
 const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string; dot: string }> = {
@@ -68,6 +69,7 @@ function WorkerNoteModal({
 function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
   const [loading, setLoading] = useState<string | null>(null);
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [errorModal, setErrorModal] = useState<{ open: boolean; message: string }>({ open: false, message: "" });
   const meta = STATUS_META[job.status] || STATUS_META[""];
   const action = WORKER_ACTIONS[job.status];
   const clientInfo = job.client as { name: string; email: string; phone?: string };
@@ -75,7 +77,7 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
   const handleAcceptDecline = async (act: "accept" | "decline") => {
     setLoading(act);
     try { await bookingApi.respond(job._id, act); onAction(); }
-    catch (e: any) { alert(e.message); }
+    catch (e: any) { setErrorModal({ open: true, message: e.message || "Action failed" }); }
     finally { setLoading(null); }
   };
 
@@ -83,7 +85,7 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
     setShowNoteModal(false);
     setLoading("advance");
     try { await bookingApi.updateStatus(job._id, action.next, { workerNote: note }); onAction(); }
-    catch (e: any) { alert(e.message); }
+    catch (e: any) { setErrorModal({ open: true, message: e.message || "Failed to update job status" }); }
     finally { setLoading(null); }
   };
 
@@ -122,7 +124,7 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
 
           {/* Service & Description */}
           <div className="mb-5">
-            <h3 className="font-bold text-[#0F172A] text-lg mb-1">{job.service}</h3>
+            <h3 className="text-2xl font-bold text-[#0F172A] mb-1">{job.service}</h3>
             <p className="text-sm text-gray-500 leading-relaxed line-clamp-2">{job.description}</p>
           </div>
 
@@ -222,6 +224,11 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
       </motion.div>
 
       {showNoteModal && <WorkerNoteModal job={job} onSubmit={handleAdvance} onClose={() => setShowNoteModal(false)} />}
+      <StatusErrorModal 
+        isOpen={errorModal.open} 
+        message={errorModal.message} 
+        onClose={() => setErrorModal({ ...errorModal, open: false })} 
+      />
     </>
   );
 }
@@ -254,7 +261,7 @@ export default function JobsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-3xl font-black text-[#0F172A] tracking-tight">My Jobs</h1>
+          <h1 className="text-2xl font-bold text-[#0F172A] tracking-tight">My Jobs</h1>
           <p className="text-xs text-gray-400 uppercase tracking-widest mt-1 font-bold">
             {total} {total === 1 ? "job" : "jobs"}
           </p>

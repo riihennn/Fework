@@ -25,6 +25,7 @@ const JobSchema = new Schema<IJob>(
       note: { type: String, trim: true },
       approvedAt: { type: Date },
     },
+    reviewed: { type: Boolean, default: false },
   },
   { timestamps: true }
 );

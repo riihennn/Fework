@@ -10,6 +10,7 @@ import { IncomingJobAlertStack, IncomingJob } from "@/components/worker/dashboar
 // Components
 import DashboardSidebar from "@/components/worker/dashboard/DashboardSidebar";
 import DashboardHeader from "@/components/worker/dashboard/DashboardHeader";
+import StatusErrorModal from "@/components/worker/dashboard/StatusErrorModal";
 
 export default function WorkerLayout({
   children,
@@ -24,6 +25,7 @@ export default function WorkerLayout({
   const [isAvailable, setIsAvailable] = useState(true);
   const [togglingAvailability, setTogglingAvailability] = useState(false);
   const [incomingJobs, setIncomingJobs] = useState<IncomingJob[]>([]);
+  const [errorModal, setErrorModal] = useState<{ open: boolean; message: string }>({ open: false, message: "" });
 
   // Derive active section from pathname
   const activeSection = pathname.split("/").pop() || "overview";
@@ -33,6 +35,14 @@ export default function WorkerLayout({
       restoreSession().catch(() => router.push("/login"));
     }
   }, [isAuthenticated, restoreSession, router]);
+
+  useEffect(() => {
+    if (isAuthenticated && user?.role === "worker") {
+      workerApi.getDashboard().then(data => {
+        setIsAvailable(data.stats.isAvailable);
+      }).catch(console.error);
+    }
+  }, [isAuthenticated, user]);
 
   // ── Real-time SSE handlers ──────────────────────────────────
   const handleNewBooking = useCallback((data: { job: IncomingJob }) => {
@@ -76,8 +86,8 @@ export default function WorkerLayout({
     try {
       const res = await workerApi.toggleAvailability();
       setIsAvailable(res.isAvailable);
-    } catch {
-      // ignore
+    } catch (e: any) {
+      setErrorModal({ open: true, message: e.message || "Failed to update availability" });
     } finally {
       setTogglingAvailability(false);
     }
@@ -122,6 +132,12 @@ export default function WorkerLayout({
         jobs={incomingJobs}
         onResponded={handleResponded}
         onDismiss={handleDismiss}
+      />
+
+      <StatusErrorModal
+        isOpen={errorModal.open}
+        message={errorModal.message}
+        onClose={() => setErrorModal({ ...errorModal, open: false })}
       />
     </div>
   );

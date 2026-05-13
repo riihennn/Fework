@@ -50,7 +50,8 @@ export const register = async (req: Request, res: Response): Promise<void> => {
 
     const result = await authService.registerUser(
       name, email, password, role as UserRole, phone,
-      { category, bio, experience, hourlyRate, location, city, state, pincode }
+      { category, bio, experience, hourlyRate, location, city, state, pincode },
+      city
     );
 
     res.cookie("token", result.token, cookieOptions);

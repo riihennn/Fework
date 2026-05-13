@@ -38,6 +38,11 @@ const UserSchema = new Schema<IUser>(
       type: String,
       default: "",
     },
+    city: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     isVerified: {
       type: Boolean,
       default: false,

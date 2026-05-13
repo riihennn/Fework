@@ -1,6 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import Worker from "../models/Worker.model";
-import Job from "../models/Job.model";
+import Job from "../models/Booking.model";
 import { AuthRequest } from "../types";
 import { sendSuccess } from "../utils/response.utils";
 
@@ -30,9 +30,11 @@ export const getAllWorkers = async (
       query.city = { $regex: city as string, $options: "i" };
     }
 
-    // 3. Filter by availability (default true for public view if not specified)
+    // 3. Filter by availability (default true for public view)
     if (isAvailable !== undefined) {
       query.isAvailable = isAvailable === "true";
+    } else {
+      query.isAvailable = true; // Only show active workers by default
     }
 
     // 4. Initial worker fetch with population
@@ -113,6 +115,23 @@ export const toggleAvailability = async (
       });
     }
 
+    const currentStatus = worker.isAvailable;
+
+    // If trying to go OFFLINE (current is true, target is false)
+    if (currentStatus === true) {
+      const activeJobs = await Job.findOne({
+        worker: worker._id,
+        status: { $in: ["pending", "accepted", "in_progress", "awaiting_approval", "disputed"] },
+      });
+
+      if (activeJobs) {
+        return res.status(400).json({
+          success: false,
+          message: "Cannot go offline while you have request active or pending jobs. Please complete or resolve them first.",
+        });
+      }
+    }
+
     worker.isAvailable = !worker.isAvailable;
     await worker.save();
 
@@ -174,6 +193,7 @@ export const getWorkerDashboard = async (
         jobsCompleted: worker.totalJobs,
         rating: worker.rating,
         responseRate: 98,
+        isAvailable: worker.isAvailable,
       },
       performance: {
         profileCompletion,
@@ -192,6 +212,84 @@ export const getWorkerDashboard = async (
     };
 
     sendSuccess(res, "Dashboard data retrieved", dashboardData);
+  } catch (error) {
+    next(error);
+  }
+};
+/**
+ * @desc    Get earnings breakdown for the logged-in worker
+ * @route   GET /api/workers/earnings
+ * @access  Private (Worker only)
+ */
+export const getWorkerEarnings = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const worker = await Worker.findOne({ user: req.user?.id });
+    if (!worker) return res.status(404).json({ success: false, message: "Worker not found" });
+
+    const completedJobs = await Job.find({ worker: worker._id, status: "completed" })
+      .populate("client", "name email avatar")
+      .sort("-updatedAt");
+
+    const now = new Date();
+    const startOfWeek = new Date(now);
+    startOfWeek.setDate(now.getDate() - now.getDay());
+    startOfWeek.setHours(0, 0, 0, 0);
+
+    const startOfMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+
+    // Aggregate earnings
+    let totalEarnings = 0;
+    let thisWeek = 0;
+    let thisMonth = 0;
+
+    // Monthly breakdown — last 6 months
+    const monthlyMap: Record<string, number> = {};
+    for (let i = 5; i >= 0; i--) {
+      const d = new Date(now.getFullYear(), now.getMonth() - i, 1);
+      const key = d.toLocaleString("default", { month: "short", year: "2-digit" });
+      monthlyMap[key] = 0;
+    }
+
+    completedJobs.forEach((job) => {
+      const pay = job.actualPay || job.estimatedPay;
+      const paidAt = job.updatedAt as Date;
+
+      totalEarnings += pay;
+      if (paidAt >= startOfWeek) thisWeek += pay;
+      if (paidAt >= startOfMonth) thisMonth += pay;
+
+      const key = paidAt.toLocaleString("default", { month: "short", year: "2-digit" });
+      if (key in monthlyMap) monthlyMap[key] += pay;
+    });
+
+    // Pending earnings (awaiting_approval jobs)
+    const pendingJobs = await Job.find({ worker: worker._id, status: "awaiting_approval" });
+    const pendingEarnings = pendingJobs.reduce((acc, j) => acc + (j.actualPay || j.estimatedPay), 0);
+
+    sendSuccess(res, "Earnings retrieved", {
+      summary: {
+        totalEarnings,
+        thisMonth,
+        thisWeek,
+        pendingEarnings,
+        totalJobs: completedJobs.length,
+        avgPerJob: completedJobs.length ? Math.round(totalEarnings / completedJobs.length) : 0,
+      },
+      monthlyBreakdown: Object.entries(monthlyMap).map(([month, amount]) => ({ month, amount })),
+      recentTransactions: completedJobs.slice(0, 20).map((job) => ({
+        id: job._id,
+        service: job.service,
+        client: (job.client as any)?.name || "Client",
+        clientAvatar: (job.client as any)?.avatar,
+        amount: job.actualPay || job.estimatedPay,
+        paidAt: job.updatedAt,
+        location: job.location,
+      })),
+    });
   } catch (error) {
     next(error);
   }

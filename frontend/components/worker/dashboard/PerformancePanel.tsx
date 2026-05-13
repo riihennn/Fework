@@ -23,7 +23,7 @@ export default function PerformancePanel({ performance }: PerformancePanelProps)
     <div className="space-y-8">
       <div className="bg-[#0F172A] rounded-[40px] p-10 text-white relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/10 rounded-full blur-3xl" />
-        <h3 className="text-xl font-black mb-6 tracking-tight">Performance Summary</h3>
+        <h3 className="text-2xl font-bold mb-6 tracking-tight text-white">Performance Summary</h3>
         <div className="space-y-6">
           {metrics.map((p, i) => (
             <div key={i} className="space-y-2">

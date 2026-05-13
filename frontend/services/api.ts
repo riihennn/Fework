@@ -7,6 +7,7 @@ export interface AuthUser {
   email: string;
   role: "client" | "worker";
   avatar?: string;
+  city?: string;
   isVerified: boolean;
 }
 
@@ -25,6 +26,7 @@ export interface WorkerPublic {
   _id: string;
   category: string;
   bio: string;
+  skills: string[];
   hourlyRate: number;
   experience: string;
   city: string;
@@ -41,6 +43,7 @@ export interface WorkerDashboardData {
     jobsCompleted: number;
     rating: number;
     responseRate: number;
+    isAvailable: boolean;
   };
   performance: {
     profileCompletion: number;
@@ -90,10 +93,11 @@ export const authApi = {
     password: string,
     role: "client" | "worker",
     phone?: string,
-    workerProfile?: WorkerProfile
+    workerProfile?: WorkerProfile,
+    city?: string
   ) =>
     request<{ user: AuthUser; token: string }>("/auth/register", "POST", {
-      name, email, password, role, phone, ...workerProfile,
+      name, email, password, role, phone, city, ...workerProfile,
     }),
 
   me: () =>
@@ -103,12 +107,32 @@ export const authApi = {
     request<null>("/auth/logout", "POST"),
 };
 
+export interface EarningsData {
+  summary: {
+    totalEarnings: number;
+    thisMonth: number;
+    thisWeek: number;
+    pendingEarnings: number;
+    totalJobs: number;
+    avgPerJob: number;
+  };
+  monthlyBreakdown: { month: string; amount: number }[];
+  recentTransactions: {
+    id: string;
+    service: string;
+    client: string;
+    clientAvatar?: string;
+    amount: number;
+    paidAt: string;
+    location: string;
+  }[];
+}
+
 // ─── Worker API ───────────────────────────────────────────────────
 export const workerApi = {
-  // GET /api/workers — public: all workers (client sees available ones)
   getAll: (params?: Record<string, string>) => {
-    const queryString = params 
-      ? "?" + new URLSearchParams(params).toString() 
+    const queryString = params
+      ? "?" + new URLSearchParams(params).toString()
       : "";
     return request<WorkerPublic[]>(`/workers${queryString}`, "GET");
   },
@@ -116,14 +140,14 @@ export const workerApi = {
   getById: (id: string) =>
     request<WorkerPublic>(`/workers/${id}`, "GET"),
 
-  // GET /api/workers/dashboard — worker dashboard data
-  getDashboard: (headers?: Record<string, string>) => {
-    return request<WorkerDashboardData>("/workers/dashboard", "GET", undefined, headers);
-  },
+  getDashboard: (headers?: Record<string, string>) =>
+    request<WorkerDashboardData>("/workers/dashboard", "GET", undefined, headers),
 
-  // PUT /api/workers/availability — worker toggles online/offline
   toggleAvailability: () =>
     request<{ isAvailable: boolean }>("/workers/availability", "PUT"),
+
+  getEarnings: () =>
+    request<EarningsData>("/workers/earnings", "GET"),
 };
 
 // ─── Booking Types ────────────────────────────────────────────
@@ -151,6 +175,7 @@ export interface BookingJob {
     note?: string;
     approvedAt?: string;
   };
+  reviewed: boolean;
   createdAt: string;
   updatedAt: string;
 }
@@ -204,3 +229,43 @@ export const bookingApi = {
 
 // ─── SSE Helper ───────────────────────────────────────────────
 export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+
+// ─── Review API ──────────────────────────────────────────
+export interface ReviewData {
+  _id: string;
+  job: { _id: string; service: string } | string;
+  client: { _id: string; name: string; avatar?: string } | string;
+  rating: number;
+  comment: string;
+  createdAt: string;
+}
+
+export interface WorkerReviewsResponse {
+  reviews: ReviewData[];
+  total: number;
+  avgRating: number;
+}
+
+export interface MyReviewsResponse {
+  reviews: ReviewData[];
+  total: number;
+  avgRating: number;
+  breakdown: Record<number, number>;
+}
+
+export const reviewApi = {
+  // POST /api/reviews — submit after job completion
+  submit: (jobId: string, rating: number, comment?: string) =>
+    request<ReviewData>("/reviews", "POST", { jobId, rating, comment }),
+
+  // GET /api/reviews/worker/:workerId — all reviews for a worker (public)
+  getWorkerReviews: (workerId: string) =>
+    request<WorkerReviewsResponse>(`/reviews/worker/${workerId}`, "GET"),
+
+  getMyReviews: () =>
+    request<MyReviewsResponse>("/reviews/mine", "GET"),
+
+  // GET /api/reviews/check/:jobId — check if client already reviewed
+  checkReviewed: (jobId: string) =>
+    request<{ reviewed: boolean }>(`/reviews/check/${jobId}`, "GET"),
+};

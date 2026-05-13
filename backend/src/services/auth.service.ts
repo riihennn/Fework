@@ -22,12 +22,13 @@ export const registerUser = async (
   password: string,
   role: UserRole,
   phone?: string,
-  workerProfile?: WorkerProfileInput
+  workerProfile?: WorkerProfileInput,
+  city?: string
 ): Promise<{ user: Partial<IUser>; token: string }> => {
   const existing = await User.findOne({ email });
   if (existing) throw new Error("An account with this email already exists.");
 
-  const user = await User.create({ name, email, password, role, phone });
+  const user = await User.create({ name, email, password, role, phone, city: city || "" });
 
   // If registering as a worker, create their professional profile
   if (role === "worker") {
@@ -53,13 +54,13 @@ export const registerUser = async (
       email: user.email,
       role: user.role,
       avatar: user.avatar,
+      city: user.city,
       isVerified: user.isVerified,
     },
     token,
   };
 };
 
-// ── Login ───────────────────────────────────────────────────
 export const loginUser = async (
   email: string,
   password: string
@@ -79,6 +80,7 @@ export const loginUser = async (
       email: user.email,
       role: user.role,
       avatar: user.avatar,
+      city: user.city,
       isVerified: user.isVerified,
     },
     token,

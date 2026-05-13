@@ -13,6 +13,7 @@ export interface IUser extends Document {
   phone?: string;
   role: UserRole;
   avatar?: string;
+  city?: string;
   isVerified: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -69,7 +70,8 @@ export interface IJob extends Document {
   paymentMethod: "cash";
   paymentStatus: "pending" | "paid";
   clientApproval?: IJobClientApproval;
-  workerNote?: string;      // worker's note when marking ready for review
+  workerNote?: string;
+  reviewed: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
