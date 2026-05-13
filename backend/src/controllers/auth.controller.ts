@@ -54,6 +54,7 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     );
 
     res.cookie("token", result.token, cookieOptions);
+    res.cookie("user_role", result.user.role, { ...cookieOptions, httpOnly: false }); // non-httpOnly for middleware
     sendSuccess(res, "Registration successful.", result, 201);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Registration failed.";
@@ -73,6 +74,7 @@ export const login = async (req: Request, res: Response): Promise<void> => {
     const result = await authService.loginUser(email, password);
 
     res.cookie("token", result.token, cookieOptions);
+    res.cookie("user_role", result.user.role, { ...cookieOptions, httpOnly: false });
     sendSuccess(res, "Login successful.", result);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Login failed.";
@@ -94,5 +96,6 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
 // ── POST /api/auth/logout ────────────────────────────────────
 export const logout = (_req: Request, res: Response): void => {
   res.clearCookie("token");
+  res.clearCookie("user_role");
   sendSuccess(res, "Logged out successfully.");
 };

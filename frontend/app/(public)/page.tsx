@@ -24,9 +24,7 @@ import {
   TrendingUp,
   Award
 } from "lucide-react";
-import Navbar from "@/components/layout/Navbar";
-import Footer from "@/components/layout/Footer";
-import HeroSearch from "@/components/HeroSearch";
+import HeroSearch from "@/components/home/HeroSearch";
 
 const categories = [
   { name: "Electrician", icon: Zap },
@@ -152,7 +150,7 @@ export default function LandingPage() {
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
-      <Navbar />
+
 
       <main className="flex-grow">
         {/* Hero Section */}
@@ -568,7 +566,7 @@ export default function LandingPage() {
         </section>
       </main>
 
-      <Footer />
+
     </div>
   );
 }

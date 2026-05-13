@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import Worker from "../models/Worker.model";
+import Job from "../models/Job.model";
 import { AuthRequest } from "../types";
 import { sendSuccess } from "../utils/response.utils";
 
@@ -118,6 +119,79 @@ export const toggleAvailability = async (
     sendSuccess(res, "Availability updated", {
       isAvailable: worker.isAvailable,
     });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Get worker dashboard data (stats & recent jobs)
+ * @route   GET /api/workers/dashboard
+ * @access  Private (Worker only)
+ */
+export const getWorkerDashboard = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const worker = await Worker.findOne({ user: req.user?.id });
+
+    if (!worker) {
+      return res.status(404).json({
+        success: false,
+        message: "Worker profile not found",
+      });
+    }
+
+    // 1. Fetch Stats
+    const completedJobs = await Job.find({ 
+      worker: worker._id, 
+      status: "completed" 
+    });
+
+    const totalEarnings = completedJobs.reduce((acc, job) => acc + (job.actualPay || job.estimatedPay), 0);
+    
+    // 2. Fetch Recent Activity (last 5 jobs)
+    const recentJobs = await Job.find({ worker: worker._id })
+      .populate("client", "name email avatar")
+      .sort("-createdAt")
+      .limit(5);
+
+    // 3. Calculate Performance Metrics
+    const totalFields = 8; // category, bio, hourlyRate, experience, location, city, state, pincode
+    const filledFields = [
+      worker.category, worker.bio, worker.hourlyRate, worker.experience, 
+      worker.location, worker.city, worker.state, worker.pincode
+    ].filter(f => !!f).length;
+    
+    const profileCompletion = Math.round((filledFields / totalFields) * 100);
+
+    // 4. Construct response
+    const dashboardData = {
+      stats: {
+        totalEarnings,
+        jobsCompleted: worker.totalJobs,
+        rating: worker.rating,
+        responseRate: 98,
+      },
+      performance: {
+        profileCompletion,
+        clientSatisfaction: worker.rating ? (worker.rating / 5) * 100 : 0,
+        onTimeArrival: 95, // Mock for now
+      },
+      recentJobs: recentJobs.map(job => ({
+        id: job._id,
+        client: (job.client as any)?.name || "Unknown Client",
+        service: job.service,
+        location: job.location,
+        date: job.scheduledAt,
+        status: job.status,
+        amount: job.status === "completed" ? (job.actualPay || job.estimatedPay) : job.estimatedPay,
+      })),
+    };
+
+    sendSuccess(res, "Dashboard data retrieved", dashboardData);
   } catch (error) {
     next(error);
   }

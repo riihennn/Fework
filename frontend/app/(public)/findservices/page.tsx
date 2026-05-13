@@ -7,7 +7,6 @@ import {
   UserCircle 
 } from "lucide-react";
 import Link from "next/link";
-import Navbar from "@/components/layout/Navbar";
 import { workerApi, WorkerPublic } from "@/services/api";
 import FilterSidebar from "@/components/search/FilterSidebar";
 import SearchHeader from "@/components/search/SearchHeader";
@@ -40,7 +39,7 @@ export default async function FindServicePage({ searchParams }: PageProps) {
 
   return (
     <div className="min-h-screen bg-white font-sans text-[#0F172A] selection:bg-teal-100 selection:text-teal-900">
-      <Navbar />
+
 
       <div className="flex pt-16 max-w-[1600px] mx-auto min-h-screen">
         <FilterSidebar />

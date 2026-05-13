@@ -1,10 +1,11 @@
 "use client";
 
 import React from "react";
-import { User, MapPin, Clock } from "lucide-react";
+import { User, MapPin, Clock, ArrowUpRight } from "lucide-react";
+import Link from "next/link";
 
 interface Job {
-  id: number;
+  id: string;
   client: string;
   service: string;
   location: string;
@@ -15,11 +16,16 @@ interface Job {
 
 interface RecentJobsProps {
   jobs: Job[];
-  statusColor: (status: string) => string;
-  onViewAll: () => void;
 }
 
-export default function RecentJobs({ jobs, statusColor, onViewAll }: RecentJobsProps) {
+export default function RecentJobs({ jobs }: RecentJobsProps) {
+  const statusColor = (status: string) => {
+    if (status === "completed" || status === "accepted") return "text-teal-600 bg-teal-50 border-teal-100";
+    if (status === "pending" || status === "in_progress") return "text-amber-600 bg-amber-50 border-amber-100";
+    if (status === "cancelled") return "text-rose-500 bg-rose-50 border-rose-100";
+    return "text-gray-500 bg-gray-50 border-gray-100";
+  };
+
   return (
     <div className="bg-white rounded-[40px] border border-gray-100 p-10 shadow-[0_8px_30px_rgb(0,0,0,0.02)]">
       <div className="flex items-center justify-between mb-10">
@@ -27,12 +33,12 @@ export default function RecentJobs({ jobs, statusColor, onViewAll }: RecentJobsP
           <h2 className="text-2xl font-black text-[#0F172A] tracking-tight">Recent Activity</h2>
           <p className="text-xs text-gray-400 font-black uppercase tracking-widest mt-1">Live tracking of your latest jobs</p>
         </div>
-        <button
-          onClick={onViewAll}
-          className="px-6 py-2.5 rounded-xl bg-gray-50 border border-gray-100 text-[10px] font-black text-[#0F172A] uppercase tracking-widest hover:bg-[#0F172A] hover:text-white transition-all shadow-sm"
+        <Link
+          href="/worker/jobs"
+          className="px-6 py-2.5 rounded-xl bg-gray-50 border border-gray-100 text-[10px] font-black text-[#0F172A] uppercase tracking-widest hover:bg-[#0F172A] hover:text-white transition-all shadow-sm flex items-center gap-2"
         >
-          View Full History
-        </button>
+          View Full History <ArrowUpRight size={14} />
+        </Link>
       </div>
       
       <div className="space-y-3">
@@ -53,7 +59,7 @@ export default function RecentJobs({ jobs, statusColor, onViewAll }: RecentJobsP
             </div>
             <div className="flex flex-wrap items-center gap-8 pl-20 md:pl-0">
               <div className="text-[11px] text-gray-400 font-black uppercase tracking-[0.1em] flex items-center gap-2">
-                <Clock size={14} className="text-teal-500" /> {job.date}
+                <Clock size={14} className="text-teal-500" /> {new Date(job.date).toLocaleDateString('en-IN', { day: 'numeric', month: 'short' })}, {new Date(job.date).toLocaleTimeString('en-IN', { hour: '2-digit', minute: '2-digit' })}
               </div>
               {job.amount > 0 && (
                 <div className="text-lg font-black text-[#0F172A] tracking-tight">₹{job.amount}</div>

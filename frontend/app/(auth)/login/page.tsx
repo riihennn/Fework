@@ -25,7 +25,7 @@ export default function LoginPage() {
       // redirect based on rolex
       const { user } = useAuthStore.getState();
       if (user?.role === "worker") {
-        router.push("/worker/dashboard");
+        router.push("/worker");
       } else {
         router.push("/");
       }

@@ -1,10 +1,7 @@
 import type { Metadata } from "next";
-import { Inter } from "next/font/google";
 import "./globals.css";
-import SessionRestorer from "@/components/SessionRestorer";
+import SessionRestorer from "@/components/shared/SessionRestorer";
 import QueryProvider from "@/components/providers/QueryProvider";
-
-const inter = Inter({ subsets: ["latin"] });
 
 export const metadata: Metadata = {
   title: "Fework | Premium Service Network",
@@ -18,7 +15,7 @@ export default function RootLayout({
 }>) {
   return (
     <html lang="en">
-      <body className={inter.className}>
+      <body className="antialiased">
         <QueryProvider>
           <SessionRestorer />
           {children}

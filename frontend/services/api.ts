@@ -35,15 +35,42 @@ export interface WorkerPublic {
   user: { _id: string; name: string; email: string; avatar?: string };
 }
 
+export interface WorkerDashboardData {
+  stats: {
+    totalEarnings: number;
+    jobsCompleted: number;
+    rating: number;
+    responseRate: number;
+  };
+  performance: {
+    profileCompletion: number;
+    clientSatisfaction: number;
+    onTimeArrival: number;
+  };
+  recentJobs: {
+    id: string;
+    client: string;
+    service: string;
+    location: string;
+    date: string;
+    status: string;
+    amount: number;
+  }[];
+}
+
 // ─── Core fetch helper ────────────────────────────────────────────
 const request = async <T>(
   path: string,
   method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
-  body?: unknown
+  body?: unknown,
+  customHeaders?: Record<string, string>
 ): Promise<T> => {
   const res = await fetch(`${API_BASE}${path}`, {
     method,
-    headers: { "Content-Type": "application/json" },
+    headers: { 
+      "Content-Type": "application/json",
+      ...customHeaders 
+    },
     credentials: "include",
     ...(body ? { body: JSON.stringify(body) } : {}),
   });
@@ -89,7 +116,74 @@ export const workerApi = {
   getById: (id: string) =>
     request<WorkerPublic>(`/workers/${id}`, "GET"),
 
+  // GET /api/workers/dashboard — worker dashboard data
+  getDashboard: (headers?: Record<string, string>) => {
+    return request<WorkerDashboardData>("/workers/dashboard", "GET", undefined, headers);
+  },
+
   // PUT /api/workers/availability — worker toggles online/offline
   toggleAvailability: () =>
     request<{ isAvailable: boolean }>("/workers/availability", "PUT"),
 };
+
+// ─── Booking Types ────────────────────────────────────────────
+export interface BookingJob {
+  _id: string;
+  client: { _id: string; name: string; email: string; avatar?: string; phone?: string };
+  worker: string;
+  service: string;
+  description: string;
+  location: string;
+  status: "pending" | "accepted" | "in_progress" | "completed" | "cancelled";
+  scheduledAt: string;
+  estimatedPay: number;
+  actualPay?: number;
+  isUrgent: boolean;
+  createdAt: string;
+}
+
+export interface BookingsResponse {
+  jobs: BookingJob[];
+  pagination: { total: number; page: number; pages: number };
+}
+
+// ─── Booking API ──────────────────────────────────────────────
+export const bookingApi = {
+  // POST /api/bookings — client books a worker
+  create: (data: {
+    workerId: string;
+    service: string;
+    description: string;
+    location: string;
+    scheduledAt: string;
+    estimatedPay: number;
+    isUrgent?: boolean;
+  }) => request<{ jobId: string }>("/bookings", "POST", data),
+
+  // GET /api/bookings/worker — worker's paginated job list
+  getWorkerJobs: (params?: { status?: string; page?: string; limit?: string }) => {
+    const qs = params
+      ? "?" + new URLSearchParams(params as Record<string, string>).toString()
+      : "";
+    return request<BookingsResponse>(`/bookings/worker${qs}`, "GET");
+  },
+
+  // GET /api/bookings/client — client's requested jobs
+  getClientJobs: (params?: { status?: string; page?: string; limit?: string }) => {
+    const qs = params
+      ? "?" + new URLSearchParams(params as Record<string, string>).toString()
+      : "";
+    return request<BookingsResponse>(`/bookings/client${qs}`, "GET");
+  },
+
+  // PUT /api/bookings/:jobId/respond
+  respond: (jobId: string, action: "accept" | "decline") =>
+    request<{ status: string }>(`/bookings/${jobId}/respond`, "PUT", { action }),
+
+  // PUT /api/bookings/:jobId/status
+  updateStatus: (jobId: string, status: string, actualPay?: number) =>
+    request<{ status: string }>(`/bookings/${jobId}/status`, "PUT", { status, actualPay }),
+};
+
+// ─── SSE Helper ───────────────────────────────────────────────
+export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";

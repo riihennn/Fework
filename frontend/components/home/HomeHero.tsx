@@ -2,7 +2,7 @@
 
 import React from "react";
 import { motion } from "framer-motion";
-import HeroSearch from "@/components/HeroSearch";
+import HeroSearch from "@/components/home/HeroSearch";
 import { useRouter } from "next/navigation";
 
 export default function HomeHero() {

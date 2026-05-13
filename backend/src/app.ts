@@ -10,6 +10,7 @@ import { errorHandler } from "./middleware/error.middleware";
 // ── Routes ───────────────────────────────────────────────────
 import authRoutes from "./routes/auth.routes";
 import workerRoutes from "./routes/worker.routes";
+import bookingRoutes from "./routes/booking.routes";
 
 const app = express();
 const PORT = process.env.PORT || 5000;
@@ -38,6 +39,7 @@ app.get("/api/health", (_req, res) => {
 // ── API Routes ───────────────────────────────────────────────
 app.use("/api/auth", authRoutes);
 app.use("/api/workers", workerRoutes);
+app.use("/api/bookings", bookingRoutes);
 
 // ── 404 Handler ──────────────────────────────────────────────
 app.use((_req, res) => {

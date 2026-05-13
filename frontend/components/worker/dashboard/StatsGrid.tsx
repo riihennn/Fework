@@ -4,17 +4,26 @@ import React from "react";
 import { motion } from "framer-motion";
 import { DollarSign, Briefcase, Star, Zap } from "lucide-react";
 
-const STATS = [
-  { label: "Total Earnings", value: "₹12,450", change: "+18%", icon: DollarSign, color: "text-teal-600 bg-teal-50" },
-  { label: "Jobs Completed", value: "34", change: "+5", icon: Briefcase, color: "text-blue-600 bg-blue-50" },
-  { label: "Avg. Rating", value: "4.8", change: "+0.1", icon: Star, color: "text-amber-600 bg-amber-50" },
-  { label: "Response Rate", value: "96%", change: "+2%", icon: Zap, color: "text-rose-600 bg-rose-50" },
-];
+interface StatsGridProps {
+  stats: {
+    totalEarnings: number;
+    jobsCompleted: number;
+    rating: number;
+    responseRate: number;
+  };
+}
 
-export default function StatsGrid() {
+export default function StatsGrid({ stats }: StatsGridProps) {
+  const displayStats = [
+    { label: "Total Earnings", value: `₹${stats.totalEarnings.toLocaleString()}`, change: "+12%", icon: DollarSign, color: "text-teal-600 bg-teal-50" },
+    { label: "Jobs Completed", value: stats.jobsCompleted.toString(), change: "+2", icon: Briefcase, color: "text-blue-600 bg-blue-50" },
+    { label: "Avg. Rating", value: stats.rating.toString(), change: "+0.1", icon: Star, color: "text-amber-600 bg-amber-50" },
+    { label: "Response Rate", value: `${stats.responseRate}%`, change: "stable", icon: Zap, color: "text-rose-600 bg-rose-50" },
+  ];
+
   return (
     <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-8">
-      {STATS.map((stat, i) => (
+      {displayStats.map((stat, i) => (
         <motion.div 
           key={i} 
           whileHover={{ y: -4 }}

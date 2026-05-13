@@ -9,7 +9,6 @@ import {
   ShieldCheck 
 } from "lucide-react";
 import Link from "next/link";
-import Navbar from "@/components/layout/Navbar";
 import { workerApi } from "@/services/api";
 import BookingPanel from "@/components/worker/BookingPanel";
 
@@ -72,7 +71,7 @@ export default async function WorkerProfilePage({ params }: PageProps) {
   if (error || !worker) {
     return (
       <div className="min-h-screen bg-white flex flex-col">
-        <Navbar />
+
         <div className="flex-1 flex items-center justify-center px-6">
           <div className="text-center">
             <p className="text-sm font-black text-gray-400 uppercase tracking-widest mb-6">{error || "Worker not found"}</p>
@@ -92,7 +91,7 @@ export default async function WorkerProfilePage({ params }: PageProps) {
 
   return (
     <div className="min-h-screen bg-[#f8f9fb] font-sans text-[#0F172A] selection:bg-teal-100">
-      <Navbar />
+
 
       <div className="max-w-[1200px] mx-auto pt-24 pb-20 px-4 md:px-8">
         <Link
