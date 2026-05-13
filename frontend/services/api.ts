@@ -127,19 +127,32 @@ export const workerApi = {
 };
 
 // ─── Booking Types ────────────────────────────────────────────
+export type JobStatus =
+  | "pending" | "accepted" | "in_progress"
+  | "awaiting_approval" | "completed" | "disputed" | "cancelled";
+
 export interface BookingJob {
   _id: string;
   client: { _id: string; name: string; email: string; avatar?: string; phone?: string };
-  worker: string;
+  worker: string | { _id: string; user: { _id: string; name: string; email: string; avatar?: string; phone?: string } };
   service: string;
   description: string;
   location: string;
-  status: "pending" | "accepted" | "in_progress" | "completed" | "cancelled";
+  status: JobStatus;
   scheduledAt: string;
   estimatedPay: number;
   actualPay?: number;
   isUrgent: boolean;
+  paymentMethod: "cash";
+  paymentStatus: "pending" | "paid";
+  workerNote?: string;
+  clientApproval?: {
+    approved: boolean;
+    note?: string;
+    approvedAt?: string;
+  };
   createdAt: string;
+  updatedAt: string;
 }
 
 export interface BookingsResponse {
@@ -180,9 +193,13 @@ export const bookingApi = {
   respond: (jobId: string, action: "accept" | "decline") =>
     request<{ status: string }>(`/bookings/${jobId}/respond`, "PUT", { action }),
 
-  // PUT /api/bookings/:jobId/status
-  updateStatus: (jobId: string, status: string, actualPay?: number) =>
-    request<{ status: string }>(`/bookings/${jobId}/status`, "PUT", { status, actualPay }),
+  // PUT /api/bookings/:jobId/status (worker advances status)
+  updateStatus: (jobId: string, status: string, opts?: { actualPay?: number; workerNote?: string }) =>
+    request<{ status: string }>(`/bookings/${jobId}/status`, "PUT", { status, ...opts }),
+
+  // PUT /api/bookings/:jobId/approve (client approves or disputes)
+  approveJob: (jobId: string, action: "approve" | "dispute", note?: string, actualPay?: number) =>
+    request<{ status: string; paymentStatus: string }>(`/bookings/${jobId}/approve`, "PUT", { action, note, actualPay }),
 };
 
 // ─── SSE Helper ───────────────────────────────────────────────

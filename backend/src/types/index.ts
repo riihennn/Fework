@@ -43,8 +43,16 @@ export type JobStatus =
   | "pending"
   | "accepted"
   | "in_progress"
+  | "awaiting_approval"   // worker done, waiting for client to confirm
   | "completed"
+  | "disputed"            // client raised an issue
   | "cancelled";
+
+export interface IJobClientApproval {
+  approved: boolean;
+  note?: string;
+  approvedAt?: Date;
+}
 
 export interface IJob extends Document {
   _id: Types.ObjectId;
@@ -58,7 +66,12 @@ export interface IJob extends Document {
   estimatedPay: number;
   actualPay?: number;
   isUrgent: boolean;
+  paymentMethod: "cash";
+  paymentStatus: "pending" | "paid";
+  clientApproval?: IJobClientApproval;
+  workerNote?: string;      // worker's note when marking ready for review
   createdAt: Date;
+  updatedAt: Date;
 }
 
 // ─── Review Document ──────────────────────────────────────────

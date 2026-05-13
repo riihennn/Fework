@@ -1,64 +1,81 @@
 import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
-// Routes that are strictly for workers (Client -> Home)
-const workerOnlyRoutes = ["/worker"];
+/**
+ * FEWORK ROUTE GUARD
+ *
+ * Three user types with completely separate territories:
+ *
+ * GUEST (no token)
+ *   ✅ /               (homepage)
+ *   ✅ /findservices    (public list)
+ *   ✅ /login, /signup
+ *   ❌ everything else → /login
+ *
+ * CLIENT (role = "client")
+ *   ✅ /               (homepage)
+ *   ✅ /findservices/*  (search + profiles)
+ *   ✅ /my-bookings
+ *   ❌ /worker/*       → /
+ *   ❌ /login, /signup → /
+ *
+ * WORKER (role = "worker")
+ *   ✅ /worker/*       (dashboard, jobs, etc.)
+ *   ❌ everything else → /worker
+ */
 
-// Routes that are strictly for clients (Worker -> Dashboard)
-const clientOnlyRoutes = ["/my-bookings"];
+// Routes workers are allowed to visit
+const WORKER_ALLOWED = ["/worker"];
+
+// Routes guests are allowed to visit without a token
+const GUEST_ALLOWED = ["/", "/findservices", "/login", "/signup"];
 
 export function middleware(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const userRole = request.cookies.get("user_role")?.value;
   const { pathname } = request.nextUrl;
 
-  // 1. Determine if the route is protected
-  // /my-bookings, /worker, and /findservices/[id] (but NOT /findservices itself)
-  const isProtected = 
-    pathname.startsWith("/my-bookings") || 
-    pathname.startsWith("/worker") || 
-    (pathname.startsWith("/findservices/") && pathname !== "/findservices");
-
-  // If trying to access a protected route without a token -> Login
-  if (isProtected && !token) {
-    const url = new URL("/login", request.url);
-    return NextResponse.redirect(url);
-  }
-
-  // 2. If logged in as worker, but trying to access client-only routes
+  // ── WORKER: locked to /worker/* ──────────────────────────────
   if (userRole === "worker") {
-    const isClientOnly = clientOnlyRoutes.some(route => pathname.startsWith(route));
-    if (isClientOnly) {
-      // Redirect worker to their dashboard
+    const isAllowed = WORKER_ALLOWED.some(r => pathname.startsWith(r));
+    if (!isAllowed) {
       return NextResponse.redirect(new URL("/worker", request.url));
     }
+    return NextResponse.next();
   }
 
-  // 3. If logged in as client, but trying to access worker-only routes
+  // ── CLIENT: locked to client territory ──────────────────────
   if (userRole === "client") {
-    const isWorkerOnly = workerOnlyRoutes.some(route => pathname.startsWith(route));
-    if (isWorkerOnly) {
-      // Redirect client to homepage
+    // Block from worker territory
+    if (pathname.startsWith("/worker")) {
       return NextResponse.redirect(new URL("/", request.url));
     }
+    // Block from login/signup (already authenticated)
+    if (pathname === "/login" || pathname.startsWith("/signup")) {
+      return NextResponse.redirect(new URL("/", request.url));
+    }
+    return NextResponse.next();
   }
 
-  // 4. If logged in and trying to access login/signup -> Redirect based on role
-  if (token && (pathname === "/login" || pathname === "/signup")) {
-    const dest = userRole === "worker" ? "/worker" : "/";
-    return NextResponse.redirect(new URL(dest, request.url));
+  // ── GUEST: limited public access ────────────────────────────
+  // Allow exact / and /findservices (but not /findservices/[id])
+  const isGuestAllowed =
+    pathname === "/" ||
+    pathname === "/findservices" ||
+    pathname === "/login" ||
+    pathname.startsWith("/signup");
+
+  if (!isGuestAllowed) {
+    // Guests hitting any other route go to login
+    return NextResponse.redirect(new URL("/login", request.url));
   }
 
   return NextResponse.next();
 }
 
-// See "Matching Paths" below to learn more
 export const config = {
+  // Run on every route except Next.js internals and static files
   matcher: [
-    "/worker/:path*",
-    "/findservices/:path*",
-    "/my-bookings/:path*",
-    "/login",
-    "/signup",
+    "/((?!_next/static|_next/image|favicon.ico|.*\\.(?:svg|png|jpg|jpeg|gif|webp)$).*)",
   ],
 };

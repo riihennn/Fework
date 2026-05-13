@@ -108,7 +108,7 @@ export const respondToBooking = async (
 };
 
 /**
- * @desc    Worker updates job status (in_progress, completed)
+ * @desc    Worker updates job status (in_progress, awaiting_approval)
  * @route   PUT /api/bookings/:jobId/status
  * @access  Private (Worker only)
  */
@@ -119,11 +119,14 @@ export const updateJobStatus = async (
 ) => {
   try {
     const { jobId } = req.params;
-    const { status, actualPay } = req.body;
+    const { status, actualPay, workerNote } = req.body;
 
+    // Workers can ONLY advance to in_progress or awaiting_approval
+    // Completed is ONLY set by the client (via approveJob)
     const validTransitions: Record<string, string[]> = {
-      accepted: ["in_progress"],
-      in_progress: ["completed", "cancelled"],
+      accepted: ["in_progress", "cancelled"],
+      in_progress: ["awaiting_approval", "cancelled"],
+      disputed:  ["awaiting_approval"], // worker can re-submit after a dispute
     };
 
     const worker = await Worker.findOne({ user: req.user!.id });
@@ -138,21 +141,76 @@ export const updateJobStatus = async (
     }
 
     job.status = status;
-    if (status === "completed") {
-      job.actualPay = actualPay || job.estimatedPay;
-      // Increment worker's completed job count
-      await Worker.findByIdAndUpdate(worker._id, { $inc: { totalJobs: 1 } });
-    }
+    if (actualPay) job.actualPay = actualPay;
+    if (workerNote) job.workerNote = workerNote;
     await job.save();
 
-    // 🔔 Notify worker dashboard of status change
     sseService.sendToWorker(worker._id.toString(), "booking_updated", {
       jobId: job._id,
       status: job.status,
-      actualPay: job.actualPay,
     });
 
     sendSuccess(res, "Job status updated", { status: job.status });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Client approves or disputes job completion
+ * @route   PUT /api/bookings/:jobId/approve
+ * @access  Private (Client only)
+ */
+export const approveJob = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { jobId } = req.params;
+    const { action, note, actualPay } = req.body; // action: "approve" | "dispute"
+
+    if (!action || !["approve", "dispute"].includes(action)) {
+      return sendError(res, "Invalid action. Use 'approve' or 'dispute'", 400);
+    }
+
+    const job = await Job.findOne({ _id: jobId, client: req.user!.id });
+    if (!job) return sendError(res, "Job not found", 404);
+
+    if (job.status !== "awaiting_approval") {
+      return sendError(res, "Job is not awaiting approval", 409);
+    }
+
+    if (action === "approve") {
+      job.status = "completed";
+      job.paymentStatus = "paid";
+      job.actualPay = actualPay || job.estimatedPay;
+      job.clientApproval = { approved: true, note, approvedAt: new Date() };
+
+      const worker = await Worker.findById(job.worker);
+      if (worker) {
+        await Worker.findByIdAndUpdate(worker._id, { $inc: { totalJobs: 1 } });
+        sseService.sendToWorker(worker._id.toString(), "booking_updated", {
+          jobId: job._id, status: "completed",
+        });
+      }
+    } else {
+      job.status = "disputed";
+      job.clientApproval = { approved: false, note, approvedAt: new Date() };
+
+      const worker = await Worker.findById(job.worker);
+      if (worker) {
+        sseService.sendToWorker(worker._id.toString(), "booking_updated", {
+          jobId: job._id, status: "disputed",
+        });
+      }
+    }
+
+    await job.save();
+    sendSuccess(res, `Job ${action}d successfully`, {
+      status: job.status,
+      paymentStatus: job.paymentStatus,
+    });
   } catch (error) {
     next(error);
   }
