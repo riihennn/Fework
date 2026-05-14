@@ -11,6 +11,7 @@ import { workerApi, WorkerPublic } from "@/services/api";
 import FilterSidebar from "@/components/search/FilterSidebar";
 import SearchHeader from "@/components/search/SearchHeader";
 import WorkerCard from "@/components/worker/WorkerCard";
+import WorkerList from "@/components/search/WorkerList";
 
 interface PageProps {
   searchParams: Promise<{
@@ -29,10 +30,15 @@ export default async function FindServicePage({ searchParams }: PageProps) {
   if (params.city) fetchParams.city = params.city;
 
   let workers: WorkerPublic[] = [];
+  let totalPages = 1;
+  let totalWorkers = 0;
   let error: string | null = null;
 
   try {
-    workers = await workerApi.getAll(fetchParams);
+    const res = await workerApi.getAll(fetchParams);
+    workers = res.workers;
+    totalPages = res.pagination.pages;
+    totalWorkers = res.pagination.total;
   } catch (e) {
     error = "Failed to load workers. Please try again.";
   }
@@ -45,7 +51,7 @@ export default async function FindServicePage({ searchParams }: PageProps) {
         <FilterSidebar />
 
         <main className="flex-1 p-6 md:p-10 lg:px-12 bg-gray-50/30">
-          <SearchHeader totalWorkers={workers.length} />
+          <SearchHeader totalWorkers={totalWorkers} />
 
           {error && (
             <div className="flex items-center gap-3 bg-rose-50 border border-rose-100 rounded-2xl p-4 text-rose-600 text-sm font-bold">
@@ -53,19 +59,13 @@ export default async function FindServicePage({ searchParams }: PageProps) {
             </div>
           )}
 
-          {!error && workers.length === 0 && (
-            <div className="text-center py-24">
-              <UserCircle size={48} className="text-gray-200 mx-auto mb-4" />
-              <p className="text-sm font-black text-gray-300 uppercase tracking-widest">No professionals available right now</p>
-              <p className="text-xs text-gray-400 mt-2">Try adjusting your filters or check back soon.</p>
-            </div>
+          {!error && (
+            <WorkerList 
+              initialWorkers={workers} 
+              initialPages={totalPages} 
+              params={fetchParams} 
+            />
           )}
-
-          <div className="space-y-6">
-            {workers.map((worker) => (
-              <WorkerCard key={worker._id} worker={worker} />
-            ))}
-          </div>
         </main>
 
         <aside className="w-80 border-l border-gray-100 hidden xl:flex flex-col p-6 sticky top-16 h-[calc(100vh-64px)] overflow-y-auto">

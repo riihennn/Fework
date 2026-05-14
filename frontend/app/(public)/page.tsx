@@ -27,12 +27,12 @@ import {
 import HeroSearch from "@/components/home/HeroSearch";
 
 const categories = [
-  { name: "Electrician", icon: Zap },
-  { name: "Plumber", icon: Droplets },
-  { name: "AC Repair", icon: Snowflake },
-  { name: "Cleaning", icon: Trash2 },
-  { name: "Painting", icon: Paintbrush },
-  { name: "Handyman", icon: Hammer },
+  { name: "Electrician", slug: "electrician", icon: Zap },
+  { name: "Plumber",     slug: "plumber",     icon: Droplets },
+  { name: "AC Repair",   slug: "ac",          icon: Snowflake },
+  { name: "Cleaning",    slug: "cleaner",     icon: Trash2 },
+  { name: "Painting",    slug: "painter",     icon: Paintbrush },
+  { name: "Carpentry",   slug: "carpenter",   icon: Hammer },
 ];
 
 // Interactive Ad Section Data
@@ -44,10 +44,10 @@ const featuredAd = {
 };
 
 const applianceServices = [
-  { name: "AC Repair", image: "https://images.unsplash.com/photo-1621905251189-08b45d6a269e?auto=format&fit=crop&q=80&w=400" },
-  { name: "Washing Machine", image: "https://images.unsplash.com/photo-1582733754238-bef39736b3f1?auto=format&fit=crop&q=80&w=400" },
-  { name: "Refrigerator", image: "https://images.unsplash.com/photo-1571175432230-01c24844c021?auto=format&fit=crop&q=80&w=400" },
-  { name: "Microwave", image: "https://images.unsplash.com/photo-1527236438218-d82077ae1f85?auto=format&fit=crop&q=80&w=400" },
+  { name: "AC Repair", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcT7oxh13J9udlF7xMCJD-AKqb_70uPN0HiQMA&s" },
+  { name: "Washing Machine", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTNijvnWjOr3H5CFOCOliO_fZIQydwoi0mdNQ&s" },
+  { name: "Refrigerator", image: "https://www.whirlpool.com/is/image/content/dam/business-unit/whirlpoolv2/en-us/marketing-content/site-assets/page-content/refer-sclp-25/mh-2-m.jpg?$atomic-mobile$&fit=constrain&fmt=webp-alpha&qlt=100&bfc=off" },
+  { name: "Microwave", image: "https://encrypted-tbn0.gstatic.com/images?q=tbn:ANd9GcTUi-fb5c1QfTvzflR1jP33Iy949r6dzaNUhw&s" },
   { name: "Television", image: "https://images.unsplash.com/photo-1593359677879-a4bb92f829d1?auto=format&fit=crop&q=80&w=400" },
 ];
 
@@ -147,6 +147,7 @@ const spotlightCards = [
 export default function LandingPage() {
   const router = useRouter();
   const navigateSearch = (term: string) => router.push(`/findservices?search=${encodeURIComponent(term)}`);
+  const navigateCategory = (cat: string) => router.push(`/findservices?category=${encodeURIComponent(cat)}`);
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
@@ -218,7 +219,7 @@ export default function LandingPage() {
               <motion.div
                 key={i}
                 whileHover={{ y: -4 }}
-                onClick={() => navigateSearch(cat.name)}
+                onClick={() => navigateCategory(cat.slug)}
                 className="bg-white border border-gray-100 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 hover:shadow-lg transition-all cursor-pointer group"
               >
                 <div className="w-14 h-14 bg-gray-50 rounded-xl flex items-center justify-center text-[#006D77] group-hover:bg-[#006D77] group-hover:text-white transition-all">
@@ -430,7 +431,7 @@ export default function LandingPage() {
               <motion.div
                 key={i}
                 whileHover={{ y: -5 }}
-                onClick={() => navigateSearch(service.name)}
+                onClick={() => navigateCategory(service.name === "AC Repair" ? "ac" : service.name.toLowerCase())}
                 className="group cursor-pointer"
               >
                 <div className="aspect-square rounded-2xl overflow-hidden mb-4 border border-gray-100">
@@ -558,9 +559,12 @@ export default function LandingPage() {
                   Our expert concierge team is available 24/7 to help you find the right pro.
                 </p>
               </div>
-              <button className="w-full bg-white border border-gray-200 text-[#0F172A] px-8 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-all shadow-sm">
-                Chat with Us
-              </button>
+                  <button
+                    onClick={() => router.push("/help")}
+                    className="w-full bg-white border border-gray-200 text-[#0F172A] px-8 py-4 rounded-2xl font-bold hover:bg-gray-100 transition-all shadow-sm"
+                  >
+                    Chat with Us
+                  </button>
             </div>
           </div>
         </section>

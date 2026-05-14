@@ -139,8 +139,8 @@ export default function HelpCenterPage() {
             </div>
             <input 
               type="text"
-              placeholder="Describe your issue or ask a question..."
-              className="w-full h-18 pl-16 pr-6 bg-white rounded-2xl border-2 border-gray-100 focus:border-teal-400 focus:ring-4 focus:ring-teal-400/5 transition-all text-lg font-medium text-[#0F172A] placeholder-gray-300 shadow-sm"
+              placeholder="Search guides, tutorials, or ask a question..."
+              className="w-full h-16 pl-16 pr-6 bg-white rounded-3xl border border-gray-100 focus:border-teal-400 focus:ring-4 focus:ring-teal-400/5 transition-all text-base font-medium text-[#0F172A] placeholder-gray-300 shadow-xl shadow-gray-100/50"
             />
           </motion.div>
         </div>

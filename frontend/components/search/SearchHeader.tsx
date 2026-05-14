@@ -13,10 +13,13 @@ export default function SearchHeader({ totalWorkers }: { totalWorkers: number })
 
   const handleSearch = () => {
     const params = new URLSearchParams(searchParams.toString());
-    if (searchQuery) params.set("search", searchQuery);
+    const q = searchQuery.trim();
+    const l = locationQuery.trim();
+
+    if (q) params.set("search", q);
     else params.delete("search");
     
-    if (locationQuery) params.set("city", locationQuery);
+    if (l) params.set("city", l);
     else params.delete("city");
 
     router.push(`/findservices?${params.toString()}`);

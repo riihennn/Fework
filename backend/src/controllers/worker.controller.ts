@@ -1,5 +1,6 @@
 import { Request, Response, NextFunction } from "express";
 import Worker from "../models/Worker.model";
+import User from "../models/User.model";
 import Job from "../models/Booking.model";
 import { AuthRequest } from "../types";
 import { sendSuccess } from "../utils/response.utils";
@@ -15,7 +16,13 @@ export const getAllWorkers = async (
   next: NextFunction
 ) => {
   try {
-    const { category, city, search, sort, isAvailable } = req.query;
+    const search = (req.query.search as string)?.trim();
+    const city = (req.query.city as string)?.trim();
+    const { category, sort, isAvailable, page = "1", limit = "10" } = req.query;
+
+    const pageNum = parseInt(page as string) || 1;
+    const limitNum = parseInt(limit as string) || 10;
+    const skip = (pageNum - 1) * limitNum;
 
     // Build query object
     const query: any = {};
@@ -37,10 +44,28 @@ export const getAllWorkers = async (
       query.isAvailable = true; // Only show active workers by default
     }
 
-    // 4. Initial worker fetch with population
+    // 4. Handle Search (Keyword in name, category, or bio)
+    if (search) {
+      const keyword = search as string;
+      
+      // 4.1 Find users with matching names first
+      const matchingUsers = await User.find({
+        name: { $regex: keyword, $options: "i" }
+      }).select("_id");
+      const userIds = matchingUsers.map(u => u._id);
+
+      query.$or = [
+        { user: { $in: userIds } },
+        { category: { $regex: keyword, $options: "i" } },
+        { bio: { $regex: keyword, $options: "i" } },
+        { city: { $regex: keyword, $options: "i" } } // Include city in general search too
+      ];
+    }
+
+    // 5. Initial worker fetch with population
     let workersQuery = Worker.find(query).populate("user", "name email avatar");
 
-    // 5. Handle Sorting
+    // 6. Handle Sorting
     if (sort) {
       const sortBy = (sort as string).split(",").join(" ");
       workersQuery = workersQuery.sort(sortBy);
@@ -48,19 +73,22 @@ export const getAllWorkers = async (
       workersQuery = workersQuery.sort("-rating"); // Default sort by rating
     }
 
-    let workers = await workersQuery;
+    // 7. Apply Pagination
+    const workers = await workersQuery
+      .skip(skip)
+      .limit(limitNum);
 
-    // 6. Handle Search (Keyword in name or category)
-    if (search) {
-      const keyword = (search as string).toLowerCase();
-      workers = workers.filter((w: any) => {
-        const nameMatch = w.user?.name?.toLowerCase().includes(keyword);
-        const categoryMatch = w.category?.toLowerCase().includes(keyword);
-        return nameMatch || categoryMatch;
-      });
-    }
+    const total = await Worker.countDocuments(query);
 
-    sendSuccess(res, "Workers retrieved successfully", workers);
+    sendSuccess(res, "Workers retrieved successfully", {
+      workers,
+      pagination: {
+        total,
+        page: pageNum,
+        limit: limitNum,
+        pages: Math.ceil(total / limitNum)
+      }
+    });
   } catch (error) {
     next(error);
   }

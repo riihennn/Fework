@@ -326,3 +326,112 @@ export const workerEventStream = async (
     next(error);
   }
 };
+/**
+ * @desc    Client cancels a booking
+ * @route   PUT /api/bookings/:jobId/cancel
+ * @access  Private (Client only)
+ */
+export const cancelBooking = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { jobId } = req.params;
+    const { reason } = req.body;
+
+    const job = await Job.findOne({ _id: jobId, client: req.user!.id });
+    if (!job) return sendError(res, "Booking not found", 404);
+
+    const cancellableStatuses = ["pending", "accepted"];
+    if (!cancellableStatuses.includes(job.status)) {
+      return sendError(
+        res,
+        `Cannot cancel a booking that is '${job.status}'. Only pending or accepted bookings can be cancelled.`,
+        409
+      );
+    }
+
+    job.status = "cancelled";
+    if (reason) job.workerNote = `Cancelled by client: ${reason}`;
+    await job.save();
+
+    // Notify worker
+    const worker = await Worker.findById(job.worker);
+    if (worker) {
+      sseService.sendToWorker(worker._id.toString(), "booking_updated", {
+        jobId: job._id,
+        status: "cancelled",
+      });
+    }
+
+    sendSuccess(res, "Booking cancelled successfully", { status: job.status });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
+ * @desc    Client reschedules a booking
+ * @route   PUT /api/bookings/:jobId/reschedule
+ * @access  Private (Client only)
+ */
+export const rescheduleBooking = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { jobId } = req.params;
+    const { scheduledAt } = req.body;
+
+    if (!scheduledAt) return sendError(res, "New scheduled date/time is required", 400);
+
+    const newDate = new Date(scheduledAt);
+    if (isNaN(newDate.getTime())) return sendError(res, "Invalid date format", 400);
+    if (newDate <= new Date()) return sendError(res, "Rescheduled time must be in the future", 400);
+
+    const job = await Job.findOne({ _id: jobId, client: req.user!.id });
+    if (!job) return sendError(res, "Booking not found", 404);
+
+    const reschedulableStatuses = ["pending", "accepted"];
+    if (!reschedulableStatuses.includes(job.status)) {
+      return sendError(
+        res,
+        `Cannot reschedule a booking that is '${job.status}'. Only pending or accepted bookings can be rescheduled.`,
+        409
+      );
+    }
+
+    // ── 1-reschedule limit ──────────────────────────────────────────
+    if ((job.rescheduledCount || 0) >= 1) {
+      return sendError(
+        res,
+        "This booking has already been rescheduled once. You cannot reschedule it again.",
+        409
+      );
+    }
+
+    job.scheduledAt = newDate;
+    job.rescheduledCount = (job.rescheduledCount || 0) + 1;
+    await job.save();
+
+    // Notify worker
+    const worker = await Worker.findById(job.worker);
+    if (worker) {
+      sseService.sendToWorker(worker._id.toString(), "booking_updated", {
+        jobId: job._id,
+        status: job.status,
+        scheduledAt: newDate,
+      });
+    }
+
+    sendSuccess(res, "Booking rescheduled successfully", {
+      scheduledAt: newDate,
+      status: job.status,
+      rescheduledCount: job.rescheduledCount,
+    });
+  } catch (error) {
+    next(error);
+  }
+};

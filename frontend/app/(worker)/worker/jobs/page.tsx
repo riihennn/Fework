@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase, Clock, CheckCircle2, XCircle, Loader2, MapPin,
   Calendar, RefreshCw, Zap, ChevronRight, AlertTriangle,
-  MessageSquare, User, Banknote, FileText, Send
+  MessageSquare, User, Banknote, FileText, Send, CalendarClock
 } from "lucide-react";
 import { bookingApi, BookingJob, JobStatus } from "@/services/api";
 import StatusErrorModal from "@/components/worker/dashboard/StatusErrorModal";
@@ -127,6 +127,27 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
             <h3 className="text-2xl font-bold text-[#0F172A] mb-1">{job.service}</h3>
             <p className="text-sm text-gray-500 leading-relaxed line-clamp-2">{job.description}</p>
           </div>
+
+          {/* ── Rescheduled by Client Notice ──────────────────────── */}
+          {(job.rescheduledCount ?? 0) >= 1 && ["pending", "accepted"].includes(job.status) && (
+            <div className="mb-5 p-4 bg-blue-50 border border-blue-200 rounded-2xl flex items-start gap-3">
+              <div className="w-8 h-8 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                <CalendarClock size={16} className="text-blue-600" />
+              </div>
+              <div>
+                <p className="text-xs font-black text-blue-600 uppercase tracking-widest mb-0.5">📅 Rescheduled by Client</p>
+                <p className="text-sm text-blue-700 font-medium">
+                  The client moved this appointment to{" "}
+                  <span className="font-bold">
+                    {new Date(job.scheduledAt).toLocaleDateString("en-IN", { weekday: "short", day: "numeric", month: "short", year: "numeric" })}
+                    {" at "}
+                    {new Date(job.scheduledAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+                  </span>.
+                  Please plan accordingly.
+                </p>
+              </div>
+            </div>
+          )}
 
           {/* Client dispute note */}
           {job.status === "disputed" && job.clientApproval?.note && (

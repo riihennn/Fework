@@ -128,13 +128,23 @@ export interface EarningsData {
   }[];
 }
 
+export interface PaginatedWorkers {
+  workers: WorkerPublic[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    pages: number;
+  };
+}
+
 // ─── Worker API ───────────────────────────────────────────────────
 export const workerApi = {
   getAll: (params?: Record<string, string>) => {
     const queryString = params
       ? "?" + new URLSearchParams(params).toString()
       : "";
-    return request<WorkerPublic[]>(`/workers${queryString}`, "GET");
+    return request<PaginatedWorkers>(`/workers${queryString}`, "GET");
   },
 
   getById: (id: string) =>
@@ -176,6 +186,7 @@ export interface BookingJob {
     approvedAt?: string;
   };
   reviewed: boolean;
+  rescheduledCount: number;
   createdAt: string;
   updatedAt: string;
 }
@@ -225,6 +236,14 @@ export const bookingApi = {
   // PUT /api/bookings/:jobId/approve (client approves or disputes)
   approveJob: (jobId: string, action: "approve" | "dispute", note?: string, actualPay?: number) =>
     request<{ status: string; paymentStatus: string }>(`/bookings/${jobId}/approve`, "PUT", { action, note, actualPay }),
+
+  // PUT /api/bookings/:jobId/cancel (client cancels pending/accepted booking)
+  cancelBooking: (jobId: string, reason?: string) =>
+    request<{ status: string }>(`/bookings/${jobId}/cancel`, "PUT", { reason }),
+
+  // PUT /api/bookings/:jobId/reschedule (client reschedules pending/accepted booking)
+  rescheduleBooking: (jobId: string, scheduledAt: string) =>
+    request<{ scheduledAt: string; status: string }>(`/bookings/${jobId}/reschedule`, "PUT", { scheduledAt }),
 };
 
 // ─── SSE Helper ───────────────────────────────────────────────

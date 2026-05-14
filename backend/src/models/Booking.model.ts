@@ -26,6 +26,7 @@ const JobSchema = new Schema<IJob>(
       approvedAt: { type: Date },
     },
     reviewed: { type: Boolean, default: false },
+    rescheduledCount: { type: Number, default: 0 },
   },
   { timestamps: true }
 );

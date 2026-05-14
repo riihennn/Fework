@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase, Clock, Loader2, MapPin, Calendar, RefreshCw,
   Zap, User, Banknote, CheckCircle2, AlertTriangle, FileText,
-  Phone, Star, ChevronRight, X
+  Phone, Star, ChevronRight, X, XCircle, CalendarClock,
+  ChevronLeft
 } from "lucide-react";
 import { bookingApi, reviewApi, BookingJob } from "@/services/api";
 
@@ -22,6 +23,228 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string; bo
 };
 
 const STATUS_TABS = ["", "pending", "accepted", "in_progress", "awaiting_approval", "completed", "disputed", "cancelled"];
+
+const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
+const SLOTS  = ["9:00 AM","10:00 AM","11:00 AM","2:00 PM","3:00 PM","4:00 PM","5:00 PM"];
+function getCalDays(year: number, month: number) {
+  const first = new Date(year, month, 1).getDay();
+  const offset = first === 0 ? 6 : first - 1;
+  const total = new Date(year, month + 1, 0).getDate();
+  const cells: (number | null)[] = Array(offset).fill(null);
+  for (let d = 1; d <= total; d++) cells.push(d);
+  return cells;
+}
+function slotToISO(y: number, m: number, d: number, slot: string) {
+  const [time, period] = slot.split(" ");
+  let [h, min] = time.split(":").map(Number);
+  if (period === "PM" && h !== 12) h += 12;
+  if (period === "AM" && h === 12) h = 0;
+  return new Date(y, m, d, h, min).toISOString();
+}
+
+// ─── Cancel Modal ─────────────────────────────────────────────────────────
+function CancelModal({ job, onClose, onDone }: { job: BookingJob; onClose: () => void; onDone: () => void }) {
+  const [reason, setReason] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const handleCancel = async () => {
+    setLoading(true); setError(null);
+    try {
+      await bookingApi.cancelBooking(job._id, reason || undefined);
+      onDone(); onClose();
+    } catch (e: any) { setError(e.message); }
+    finally { setLoading(false); }
+  };
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+      <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="bg-white rounded-[32px] shadow-2xl border border-gray-100 w-full max-w-md overflow-hidden">
+        <div className="p-8 border-b border-gray-50 flex items-start justify-between">
+          <div>
+            <div className="w-12 h-12 rounded-2xl bg-rose-50 flex items-center justify-center mb-4">
+              <XCircle size={24} className="text-rose-500" />
+            </div>
+            <h2 className="text-xl font-black text-[#0F172A]">Cancel Booking</h2>
+            <p className="text-sm text-gray-400 mt-1">Cancel <span className="font-bold text-[#0F172A]">{job.service}</span>?</p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-400">
+            <X size={16} />
+          </button>
+        </div>
+        <div className="p-8 space-y-4">
+          <div className="p-4 bg-rose-50 border border-rose-100 rounded-2xl text-sm text-rose-700 font-medium">
+            ⚠️ This action cannot be undone. The worker will be notified immediately.
+          </div>
+          <div>
+            <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">Reason (optional)</label>
+            <textarea value={reason} onChange={e => setReason(e.target.value)} rows={3}
+              placeholder="Let the worker know why you're cancelling..."
+              className="w-full border border-gray-200 rounded-2xl p-4 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition-all" />
+          </div>
+          {error && <p className="text-sm text-rose-500 font-bold">{error}</p>}
+          <div className="grid grid-cols-2 gap-3 pt-2">
+            <button onClick={onClose} className="h-12 rounded-2xl border border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-50 transition-all">
+              Keep Booking
+            </button>
+            <button onClick={handleCancel} disabled={loading}
+              className="h-12 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+              {loading ? <Loader2 size={16} className="animate-spin" /> : <><XCircle size={16} /> Cancel Booking</>}
+            </button>
+          </div>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
+// ─── Reschedule Modal ─────────────────────────────────────────────────────
+function RescheduleModal({ job, onClose, onDone }: { job: BookingJob; onClose: () => void; onDone: () => void }) {
+  const now = new Date();
+  const [step, setStep] = useState<"pick" | "confirm">("pick");
+  const [calYear, setCalYear] = useState(now.getFullYear());
+  const [calMonth, setCalMonth] = useState(now.getMonth());
+  const [selDay, setSelDay] = useState<number | null>(null);
+  const [selSlot, setSelSlot] = useState<string | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const calDays = getCalDays(calYear, calMonth);
+  const DAYS = ["M","T","W","T","F","S","S"];
+  const prevMonth = () => { if (calMonth === 0) { setCalYear(y => y-1); setCalMonth(11); } else setCalMonth(m => m-1); };
+  const nextMonth = () => { if (calMonth === 11) { setCalYear(y => y+1); setCalMonth(0); } else setCalMonth(m => m+1); };
+
+  const handleReschedule = async () => {
+    if (!selDay || !selSlot) return;
+    setLoading(true); setError(null);
+    try {
+      await bookingApi.rescheduleBooking(job._id, slotToISO(calYear, calMonth, selDay, selSlot));
+      onDone(); onClose();
+    } catch (e: any) { setError(e.message); setStep("confirm"); }
+    finally { setLoading(false); }
+  };
+
+  const formattedDate = selDay ? `${MONTHS[calMonth]} ${selDay}, ${calYear}` : "";
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+      <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="bg-white rounded-[32px] shadow-2xl border border-gray-100 w-full max-w-md overflow-hidden">
+
+        {/* Header */}
+        <div className="p-8 border-b border-gray-50 flex items-start justify-between">
+          <div>
+            <div className="w-12 h-12 rounded-2xl bg-blue-50 flex items-center justify-center mb-4">
+              <CalendarClock size={24} className="text-blue-500" />
+            </div>
+            <h2 className="text-xl font-black text-[#0F172A]">
+              {step === "pick" ? "Reschedule Booking" : "Confirm Reschedule"}
+            </h2>
+            <p className="text-sm text-gray-400 mt-1">
+              {step === "pick"
+                ? <>Pick a new date &amp; time for <span className="font-bold text-[#0F172A]">{job.service}</span></>
+                : "Please review your new schedule before confirming"}
+            </p>
+          </div>
+          <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-400">
+            <X size={16} />
+          </button>
+        </div>
+
+        <AnimatePresence mode="wait">
+          {step === "pick" ? (
+            <motion.div key="pick" initial={{ opacity: 0, x: -10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -10 }}
+              className="p-8 space-y-4">
+              {/* Calendar */}
+              <div className="flex items-center justify-between">
+                <span className="text-sm font-black text-[#0F172A]">{MONTHS[calMonth]} {calYear}</span>
+                <div className="flex gap-1">
+                  <button onClick={prevMonth} className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center"><ChevronLeft size={14}/></button>
+                  <button onClick={nextMonth} className="w-7 h-7 rounded-full hover:bg-gray-100 flex items-center justify-center"><ChevronRight size={14}/></button>
+                </div>
+              </div>
+              <div className="grid grid-cols-7">{DAYS.map((d,i) => <div key={i} className="text-center text-[10px] font-black text-gray-300 uppercase py-1">{d}</div>)}</div>
+              <div className="grid grid-cols-7 gap-y-1">
+                {calDays.map((day, i) => {
+                  if (!day) return <div key={i} />;
+                  const isPast = new Date(calYear, calMonth, day) < new Date(now.getFullYear(), now.getMonth(), now.getDate());
+                  const isToday = day === now.getDate() && calMonth === now.getMonth() && calYear === now.getFullYear();
+                  return (
+                    <button key={i} onClick={() => { if (!isPast) { setSelDay(day); setSelSlot(null); } }} disabled={isPast}
+                      className={`text-xs font-black h-8 w-8 mx-auto rounded-full transition-all ${
+                        selDay === day ? "bg-[#0F172A] text-white" : isToday ? "ring-2 ring-blue-400 text-blue-600" : isPast ? "text-gray-200 cursor-not-allowed" : "hover:bg-gray-100 text-gray-600"
+                      }`}>{day}</button>
+                  );
+                })}
+              </div>
+              {selDay && (
+                <div className="grid grid-cols-2 gap-2">
+                  {SLOTS.map(slot => (
+                    <button key={slot} onClick={() => setSelSlot(slot)}
+                      className={`py-2.5 rounded-xl text-xs font-black transition-all border ${
+                        selSlot === slot ? "bg-[#0F172A] text-white border-[#0F172A]" : "border-gray-100 text-gray-500 hover:border-gray-300"
+                      }`}>{slot}</button>
+                  ))}
+                </div>
+              )}
+              {selSlot && selDay && (
+                <div className="p-3 bg-blue-50 border border-blue-100 rounded-2xl text-sm font-bold text-blue-700 flex items-center gap-2">
+                  <CalendarClock size={14}/> {formattedDate} · {selSlot}
+                </div>
+              )}
+              <button onClick={() => setStep("confirm")} disabled={!selDay || !selSlot}
+                className="w-full h-12 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-all disabled:opacity-40 flex items-center justify-center gap-2">
+                Review Reschedule →
+              </button>
+            </motion.div>
+          ) : (
+            <motion.div key="confirm" initial={{ opacity: 0, x: 10 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 10 }}
+              className="p-8 space-y-5">
+
+              {/* Summary card */}
+              <div className="bg-blue-50 border border-blue-100 rounded-2xl p-5 space-y-3">
+                <p className="text-[10px] font-black text-blue-500 uppercase tracking-widest">New Schedule</p>
+                <div className="flex items-center gap-3">
+                  <div className="w-10 h-10 rounded-xl bg-blue-100 flex items-center justify-center shrink-0">
+                    <Calendar size={18} className="text-blue-600" />
+                  </div>
+                  <div>
+                    <div className="text-base font-black text-[#0F172A]">{formattedDate}</div>
+                    <div className="text-sm text-blue-600 font-bold">{selSlot}</div>
+                  </div>
+                </div>
+                <div className="border-t border-blue-100 pt-3 text-xs text-blue-600 font-bold">
+                  Service: <span className="text-[#0F172A]">{job.service}</span>
+                </div>
+              </div>
+
+              {/* Warning note */}
+              <div className="p-4 bg-amber-50 border border-amber-100 rounded-2xl flex items-start gap-3">
+                <AlertTriangle size={16} className="text-amber-500 shrink-0 mt-0.5" />
+                <p className="text-xs text-amber-700 font-medium leading-relaxed">
+                  <strong>This is your only reschedule.</strong> Once confirmed, you won't be able to change the date again. The worker will be notified immediately.
+                </p>
+              </div>
+
+              {error && <p className="text-sm text-rose-500 font-bold">{error}</p>}
+
+              <div className="grid grid-cols-2 gap-3">
+                <button onClick={() => { setStep("pick"); setError(null); }}
+                  className="h-12 rounded-2xl border border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-50 transition-all flex items-center justify-center gap-1.5">
+                  <ChevronLeft size={14} /> Change Date
+                </button>
+                <button onClick={handleReschedule} disabled={loading}
+                  className="h-12 rounded-2xl bg-blue-600 hover:bg-blue-700 text-white text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2">
+                  {loading ? <Loader2 size={16} className="animate-spin" /> : <><CalendarClock size={16} /> Yes, Reschedule</>}
+                </button>
+              </div>
+            </motion.div>
+          )}
+        </AnimatePresence>
+      </motion.div>
+    </div>
+  );
+}
 
 // ─── Approval Modal ──────────────────────────────────────────────────────
 function ApprovalModal({
@@ -268,6 +491,10 @@ function ReviewModal({
 function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => void }) {
   const [showModal, setShowModal] = useState(false);
   const [showReview, setShowReview] = useState(false);
+  const [showCancel, setShowCancel] = useState(false);
+  const [showReschedule, setShowReschedule] = useState(false);
+  const canModify = ["pending", "accepted"].includes(job.status);
+  const canReschedule = canModify && (job.rescheduledCount ?? 0) < 1;
   const meta = STATUS_META[job.status] || STATUS_META[""];
   const workerUser = typeof job.worker === "object" ? (job.worker as any)?.user : null;
 
@@ -394,6 +621,26 @@ function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => voi
             </span>
           </div>
 
+          {/* Cancel / Reschedule actions */}
+          {canModify && (
+            <div className="flex flex-wrap gap-2 mb-4">
+              {canReschedule ? (
+                <button onClick={() => setShowReschedule(true)}
+                  className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-blue-50 text-blue-600 border border-blue-100 text-xs font-bold hover:bg-blue-100 transition-all">
+                  <CalendarClock size={13} /> Reschedule
+                </button>
+              ) : (
+                <span className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-gray-50 text-gray-400 border border-gray-100 text-xs font-bold cursor-not-allowed">
+                  <CalendarClock size={13} /> Rescheduled
+                </span>
+              )}
+              <button onClick={() => setShowCancel(true)}
+                className="flex items-center gap-1.5 px-4 py-2 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 text-xs font-bold hover:bg-rose-100 transition-all">
+                <XCircle size={13} /> Cancel
+              </button>
+            </div>
+          )}
+
           {/* Payment */}
           <div className="flex items-center justify-between pt-4 border-t border-gray-50">
             <div>
@@ -421,21 +668,10 @@ function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => voi
       </motion.div>
 
       <AnimatePresence>
-        {showModal && (
-          <ApprovalModal
-            job={job}
-            onClose={() => setShowModal(false)}
-            onDone={onRefresh}
-            onApproved={handleApproved}
-          />
-        )}
-        {showReview && (
-          <ReviewModal
-            jobId={job._id}
-            onClose={() => setShowReview(false)}
-            onDone={onRefresh}
-          />
-        )}
+        {showModal && <ApprovalModal job={job} onClose={() => setShowModal(false)} onDone={onRefresh} onApproved={handleApproved} />}
+        {showReview && <ReviewModal jobId={job._id} onClose={() => setShowReview(false)} onDone={onRefresh} />}
+        {showCancel && <CancelModal job={job} onClose={() => setShowCancel(false)} onDone={onRefresh} />}
+        {showReschedule && <RescheduleModal job={job} onClose={() => setShowReschedule(false)} onDone={onRefresh} />}
       </AnimatePresence>
     </>
   );

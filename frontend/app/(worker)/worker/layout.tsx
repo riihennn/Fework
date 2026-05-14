@@ -114,7 +114,7 @@ export default function WorkerLayout({
         setSidebarOpen={setSidebarOpen}
       />
 
-      <div className="flex-1 flex flex-col min-h-screen overflow-hidden bg-[#F8FAFC]">
+      <div className="flex-1 flex flex-col min-h-screen overflow-hidden bg-[#F8FAFC] lg:ml-72">
         <DashboardHeader
           user={user}
           activeSection={activeSection}

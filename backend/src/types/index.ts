@@ -72,6 +72,7 @@ export interface IJob extends Document {
   clientApproval?: IJobClientApproval;
   workerNote?: string;
   reviewed: boolean;
+  rescheduledCount: number;
   createdAt: Date;
   updatedAt: Date;
 }

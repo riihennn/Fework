@@ -4,12 +4,20 @@ import User from "./models/User.model";
 import Worker from "./models/Worker.model";
 import connectDB from "./config/db";
 
-const names = [
-  "Rahul Nair", "Sneha Menon", "Arjun Das", "Anjali Pillai", "Vishnu Prasad",
-  "Meera Krishnan", "Siddharth Varma", "Kavya Suresh", "Aditya Rajan", "Priya Lakshmi"
+const firstNames = [
+  "Rahul", "Arjun", "Vishnu", "Siddharth", "Aditya", "Abhishek", "Kiran", "Manoj", "Suresh", "Ramesh",
+  "Anish", "Deepak", "Gautam", "Harish", "Ishan", "Jatin", "Karthik", "Lokesh", "Mohit", "Nitin",
+  "Pankaj", "Rohan", "Sameer", "Tarun", "Umesh", "Varun", "Yash", "Zeeshan", "Aravind", "Biju",
+  "Chandran", "Dinesh", "Eshwar", "Faisal", "Ganesh", "Haneef", "Indrajith", "Jayesh", "Krishnan", "Lal"
+];
+
+const lastNames = [
+  "Nair", "Menon", "Das", "Pillai", "Prasad", "Varma", "Suresh", "Rajan", "Lakshmi", "Kumar",
+  "Pillai", "Nambiar", "Panicker", "Kurup", "Warrior", "Iyer", "Sarma", "Gupta", "Sharma", "Singh"
 ];
 
 const categories = ["plumber", "electrician", "ac", "cleaner", "painter", "carpenter", "mechanic", "mason"];
+const cities = ["Kozhikode", "Kochi", "Thrissur"];
 
 const seedWorkers = async () => {
   try {
@@ -26,14 +34,15 @@ const seedWorkers = async () => {
     console.log("🗑️ Cleared old seed data");
 
     // 2. Seed new workers
-    const cities = ["Kozhikode", "Kochi"];
-    let nameIndex = 0;
+    let totalSeeded = 0;
 
-    for (const city of cities) {
+    for (const category of categories) {
       for (let i = 1; i <= 5; i++) {
-        const name = names[nameIndex % names.length];
-        const email = `${name.toLowerCase().replace(/\s/g, ".")}${i}@fework.com`;
-        const category = categories[Math.floor(Math.random() * categories.length)];
+        const firstName = firstNames[Math.floor(Math.random() * firstNames.length)];
+        const lastName = lastNames[Math.floor(Math.random() * lastNames.length)];
+        const name = `${firstName} ${lastName}`;
+        const email = `${firstName.toLowerCase()}.${lastName.toLowerCase()}.${category}.${i}@fework.com`;
+        const city = cities[Math.floor(Math.random() * cities.length)];
         
         const user = await User.create({
           name: name,
@@ -47,21 +56,22 @@ const seedWorkers = async () => {
         await Worker.create({
           user: user._id,
           category: category,
-          bio: `Professional ${category} with over 8 years of experience in ${city}. Committed to excellence and customer satisfaction.`,
-          hourlyRate: 250 + Math.floor(Math.random() * 500),
-          experience: (2 + Math.floor(Math.random() * 12)).toString(),
+          skills: [category, "Repair", "Maintenance"],
+          bio: `Experienced ${category} specialist based in ${city}. Providing high-quality, reliable services for all your ${category} needs. Professional and punctual.`,
+          hourlyRate: 300 + Math.floor(Math.random() * 400),
+          experience: (3 + Math.floor(Math.random() * 15)).toString(),
           city: city,
           state: "Kerala",
-          rating: 4 + (Math.random() * 0.9),
-          totalJobs: 20 + Math.floor(Math.random() * 200),
+          rating: 4.2 + (Math.random() * 0.7),
+          totalJobs: 50 + Math.floor(Math.random() * 300),
           isAvailable: true
         });
 
-        nameIndex++;
+        totalSeeded++;
       }
     }
 
-    console.log("✅ Seeded 10 new workers with realistic names (5 Kochi, 5 Kozhikode)");
+    console.log(`✅ Successfully seeded ${totalSeeded} workers (5 per category) in ${cities.join(", ")}`);
     process.exit(0);
   } catch (error) {
     console.error("❌ Seeding failed:", error);
