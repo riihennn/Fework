@@ -2,6 +2,8 @@ import type { Metadata } from "next";
 import "./globals.css";
 import SessionRestorer from "@/components/shared/SessionRestorer";
 import QueryProvider from "@/components/providers/QueryProvider";
+import AuthProvider from "@/components/providers/AuthProvider";
+import GoogleAuthSync from "@/components/shared/GoogleAuthSync";
 
 export const metadata: Metadata = {
   title: "Fework | Premium Service Network",
@@ -16,10 +18,13 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className="antialiased">
-        <QueryProvider>
-          <SessionRestorer />
-          {children}
-        </QueryProvider>
+        <AuthProvider>
+          <QueryProvider>
+            <SessionRestorer />
+            <GoogleAuthSync />
+            {children}
+          </QueryProvider>
+        </AuthProvider>
       </body>
     </html>
   );

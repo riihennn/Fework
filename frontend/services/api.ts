@@ -87,6 +87,20 @@ export const authApi = {
   login: (email: string, password: string) =>
     request<{ user: AuthUser; token: string }>("/auth/login", "POST", { email, password }),
 
+  googleLogin: async (email: string) => {
+    const res = await fetch(`${API_BASE}/auth/google`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      credentials: "include",
+      body: JSON.stringify({ email }),
+    });
+    const data = await res.json();
+    if (!data.success) {
+      return { success: false, message: data.message, user: null, token: null };
+    }
+    return { success: true, user: data.data.user as AuthUser, token: data.data.token as string };
+  },
+
   register: (
     name: string,
     email: string,

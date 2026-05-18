@@ -87,6 +87,28 @@ export const loginUser = async (
   };
 };
 
+export const googleLogin = async (
+  email: string
+): Promise<{ user: Partial<IUser>; token: string }> => {
+  const user = await User.findOne({ email });
+  if (!user) throw new Error("User not registered.");
+
+  const token = signToken({ id: user._id.toString(), role: user.role });
+
+  return {
+    user: {
+      _id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar,
+      city: user.city,
+      isVerified: user.isVerified,
+    },
+    token,
+  };
+};
+
 // ── Get current user ─────────────────────────────────────────
 export const getMe = async (userId: string): Promise<IUser> => {
   const user = await User.findById(userId);

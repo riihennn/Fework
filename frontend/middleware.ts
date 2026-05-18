@@ -35,6 +35,11 @@ export function middleware(request: NextRequest) {
   const userRole = request.cookies.get("user_role")?.value;
   const { pathname } = request.nextUrl;
 
+  // ── Always allow NextAuth internals (session, callbacks, CSRF, etc.) ──
+  if (pathname.startsWith("/api/auth")) {
+    return NextResponse.next();
+  }
+
   // ── WORKER: locked to /worker/* ──────────────────────────────
   if (userRole === "worker") {
     const isAllowed = WORKER_ALLOWED.some(r => pathname.startsWith(r));
@@ -58,7 +63,6 @@ export function middleware(request: NextRequest) {
   }
 
   // ── GUEST: limited public access ────────────────────────────
-  // Allow exact / and /findservices (but not /findservices/[id])
   const isGuestAllowed =
     pathname === "/" ||
     pathname === "/findservices" ||

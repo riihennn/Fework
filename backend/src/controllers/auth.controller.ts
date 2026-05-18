@@ -27,6 +27,10 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+const googleLoginSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
 // ── Cookie Options ───────────────────────────────────────────
 const cookieOptions = {
   httpOnly: true,
@@ -80,6 +84,27 @@ export const login = async (req: Request, res: Response): Promise<void> => {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Login failed.";
     sendError(res, message, 401);
+  }
+};
+
+// ── POST /api/auth/google ────────────────────────────────────
+export const googleLogin = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const parsed = googleLoginSchema.safeParse(req.body);
+    if (!parsed.success) {
+      sendError(res, parsed.error.errors[0].message, 400);
+      return;
+    }
+    const { email } = parsed.data;
+    const result = await authService.googleLogin(email);
+
+    res.cookie("token", result.token, cookieOptions);
+    res.cookie("user_role", result.user.role, { ...cookieOptions, httpOnly: false });
+    sendSuccess(res, "Google login successful.", result);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Google login failed.";
+    // Send 404 so the frontend knows the user is not registered
+    sendError(res, message, 404);
   }
 };
 

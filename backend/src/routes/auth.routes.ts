@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { register, login, getMe, logout } from "../controllers/auth.controller";
+import { register, login, googleLogin, getMe, logout } from "../controllers/auth.controller";
 import { requireAuth } from "../middleware/auth.middleware";
 
 const router = Router();
@@ -7,6 +7,7 @@ const router = Router();
 // Public routes
 router.post("/register", register);
 router.post("/login", login);
+router.post("/google", googleLogin);
 router.post("/logout", logout);
 
 // Protected routes

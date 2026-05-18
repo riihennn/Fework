@@ -13,6 +13,7 @@ interface AuthState {
 // ─── Actions ─────────────────────────────────────────────────────
 interface AuthActions {
   login: (email: string, password: string) => Promise<void>;
+  googleLogin: (email: string) => Promise<boolean>;
   register: (
     name: string,
     email: string,
@@ -48,6 +49,18 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           set({ error: msg, isLoading: false });
           throw err;
         }
+      },
+
+      // ── Google Login ───────────────────────────────────────────
+      googleLogin: async (email) => {
+        set({ isLoading: true, error: null });
+        const result = await authApi.googleLogin(email);
+        if (!result.success) {
+          set({ error: result.message, isLoading: false });
+          return false;
+        }
+        set({ user: result.user, isAuthenticated: true, isLoading: false });
+        return true;
       },
 
       // ── Register ───────────────────────────────────────────────
