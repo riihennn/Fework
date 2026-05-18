@@ -51,7 +51,7 @@ function WorkerSignupForm() {
   const defaultName = searchParams.get("name") || "";
   const isGoogleAuth = searchParams.get("googleAuth") === "true";
 
-  const { register, isLoading, error, clearError } = useAuthStore();
+  const { register, googleLogin, isLoading, error, clearError } = useAuthStore();
   const { data: session, status } = useSession();
   const [step, setStep] = useState(1);
 
@@ -74,15 +74,24 @@ function WorkerSignupForm() {
     pincode: ""
   });
 
-  // When Google OAuth completes and returns to this page, auto-fill and advance to step 2
+  // When Google OAuth returns to this page, check if user is already registered
   useEffect(() => {
     if (isGoogleAuth && status === "authenticated" && session?.user?.email && step === 1) {
-      setFormData(prev => ({
-        ...prev,
-        email: session.user!.email || prev.email,
-        fullName: session.user!.name || prev.fullName,
-      }));
-      setStep(2);
+      googleLogin(session.user.email).then(success => {
+        if (success) {
+          // Already registered — log them in and redirect to their dashboard
+          const { user } = useAuthStore.getState();
+          router.push(user?.role === "worker" ? "/worker" : "/");
+        } else {
+          // New user — fill in Google details and continue to step 2
+          setFormData(prev => ({
+            ...prev,
+            email: session.user!.email || prev.email,
+            fullName: session.user!.name || prev.fullName,
+          }));
+          setStep(2);
+        }
+      });
     }
   }, [isGoogleAuth, status, session, step]);
 
