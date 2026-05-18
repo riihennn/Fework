@@ -128,7 +128,7 @@ function WorkerSignupForm() {
           pincode: formData.pincode,
         }
       );
-      router.push("/worker/dashboard");
+      router.push("/worker");
     } catch {
       // error shown from store
     }
