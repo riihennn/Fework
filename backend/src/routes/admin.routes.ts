@@ -5,6 +5,7 @@ import {
   getStats,
   getUsers,
   deleteUser,
+  toggleBlockUser,
   getWorkers,
   toggleElite,
   getBookings,
@@ -22,6 +23,7 @@ router.get("/stats", getStats);
 // ── Users ──────────────────────────────────────────────────────
 router.get("/users", getUsers);
 router.delete("/users/:id", deleteUser);
+router.patch("/users/:id/block", toggleBlockUser);
 
 // ── Workers ────────────────────────────────────────────────────
 router.get("/workers", getWorkers);

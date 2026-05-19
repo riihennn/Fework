@@ -15,6 +15,7 @@ export interface IUser extends Document {
   avatar?: string;
   city?: string;
   isVerified: boolean;
+  isBlocked: boolean;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;

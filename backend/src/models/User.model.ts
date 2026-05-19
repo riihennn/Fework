@@ -47,6 +47,10 @@ const UserSchema = new Schema<IUser>(
       type: Boolean,
       default: false,
     },
+    isBlocked: {
+      type: Boolean,
+      default: false,
+    },
   },
   {
     timestamps: true,

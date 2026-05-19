@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useRef } from "react";
-import { useSession } from "next-auth/react";
+import { useSession, signOut } from "next-auth/react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 
@@ -31,10 +31,9 @@ export default function GoogleAuthSync() {
             router.push("/");
           }
         } else {
-          // If the user is not registered, redirect to signup
-          const email = encodeURIComponent(session.user.email);
-          const name = encodeURIComponent(session.user.name || "");
-          router.push(`/signup?email=${email}&name=${name}&googleAuth=true`);
+          // If the user is not registered, sign them out of NextAuth so session is cleared and redirect to login
+          await signOut({ redirect: false });
+          router.push("/login");
         }
       }
     };

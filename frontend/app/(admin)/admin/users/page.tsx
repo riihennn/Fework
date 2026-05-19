@@ -17,6 +17,7 @@ export default function AdminUsersPage() {
   const [loading, setLoading] = useState(true);
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<AdminUser | null>(null);
+  const [togglingBlockId, setTogglingBlockId] = useState<string | null>(null);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -30,6 +31,20 @@ export default function AdminUsersPage() {
   }, [page, role, query]);
 
   useEffect(() => { load(); }, [load]);
+
+  const handleToggleBlock = async (id: string) => {
+    setTogglingBlockId(id);
+    try {
+      const { isBlocked } = await adminApi.toggleBlockUser(id);
+      setUsers((prev) =>
+        prev.map((u) => (u._id === id ? { ...u, isBlocked } : u))
+      );
+    } catch (e: any) {
+      alert(e.message || "Failed to update block status");
+    } finally {
+      setTogglingBlockId(null);
+    }
+  };
 
   const handleDelete = async () => {
     if (!confirm) return;
@@ -136,23 +151,45 @@ export default function AdminUsersPage() {
                       </span>
                     </td>
                     <td className="px-8 py-5">
-                      <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                        u.isVerified ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
-                      }`}>
-                        <span className={`w-1.5 h-1.5 rounded-full ${u.isVerified ? 'bg-green-500' : 'bg-amber-500'}`} />
-                        {u.isVerified ? 'Verified' : 'Unverified'}
-                      </span>
+                      <div className="flex flex-col gap-1.5 items-start">
+                        <span className={`inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest ${
+                          u.isVerified ? 'bg-green-50 text-green-600' : 'bg-amber-50 text-amber-600'
+                        }`}>
+                          <span className={`w-1.5 h-1.5 rounded-full ${u.isVerified ? 'bg-green-500' : 'bg-amber-500'}`} />
+                          {u.isVerified ? 'Verified' : 'Unverified'}
+                        </span>
+                        {u.isBlocked && (
+                          <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-[10px] font-black uppercase tracking-widest bg-rose-50 text-rose-600">
+                            <span className="w-1.5 h-1.5 rounded-full bg-rose-500" />
+                            Blocked
+                          </span>
+                        )}
+                      </div>
                     </td>
                     <td className="px-8 py-5 text-sm text-gray-500 font-medium">
                       {fmt(u.createdAt)}
                     </td>
                     <td className="px-8 py-5 text-right">
-                      <button
-                        onClick={() => setConfirm(u)}
-                        className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
-                      >
-                        <Trash2 size={18} />
-                      </button>
+                      <div className="flex items-center justify-end gap-3">
+                        <button
+                          onClick={() => handleToggleBlock(u._id)}
+                          disabled={togglingBlockId === u._id}
+                          className={`px-3.5 py-1.5 rounded-xl text-xs font-bold transition-all shadow-sm ${
+                            u.isBlocked
+                              ? "bg-emerald-50 text-emerald-600 hover:bg-emerald-100"
+                              : "bg-rose-50 text-rose-600 hover:bg-rose-100"
+                          }`}
+                        >
+                          {togglingBlockId === u._id ? "..." : u.isBlocked ? "Unblock" : "Block"}
+                        </button>
+                        <button
+                          onClick={() => setConfirm(u)}
+                          className="p-2 text-gray-400 hover:text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
+                          title="Delete User"
+                        >
+                          <Trash2 size={18} />
+                        </button>
+                      </div>
                     </td>
                   </tr>
                 ))}

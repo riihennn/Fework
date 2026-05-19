@@ -320,6 +320,7 @@ export interface AdminStats {
   };
   recentUsers: AdminUser[];
   bookingsByStatus: { _id: string; count: number }[];
+  trendData: { name: string; revenue: number; bookings: number }[];
 }
 
 export interface AdminUser {
@@ -330,6 +331,7 @@ export interface AdminUser {
   avatar?: string;
   city?: string;
   isVerified: boolean;
+  isBlocked: boolean;
   createdAt: string;
 }
 
@@ -381,6 +383,9 @@ export const adminApi = {
 
   deleteUser: (id: string) =>
     request<null>(`/admin/users/${id}`, "DELETE"),
+
+  toggleBlockUser: (id: string) =>
+    request<{ isBlocked: boolean }>(`/admin/users/${id}/block`, "PATCH"),
 
   getWorkers: (params?: Record<string, string>) => {
     const qs = params ? "?" + new URLSearchParams(params).toString() : "";

@@ -51,6 +51,40 @@ export const getStats = async (_req: AuthRequest, res: Response): Promise<void> 
       createdAt: { $gte: thirtyDaysAgo },
     });
 
+    // Trend Data for Last 7 Days
+    const sevenDaysAgo = new Date();
+    sevenDaysAgo.setDate(sevenDaysAgo.getDate() - 6);
+    sevenDaysAgo.setHours(0, 0, 0, 0);
+
+    const trendJobs = await Job.aggregate([
+      { $match: { createdAt: { $gte: sevenDaysAgo } } },
+      {
+        $group: {
+          _id: { $dateToString: { format: "%Y-%m-%d", date: "$createdAt" } },
+          revenue: { 
+            $sum: { 
+              $cond: [{ $eq: ["$status", "completed"] }, "$actualPay", 0] 
+            } 
+          },
+          bookings: { $sum: 1 }
+        }
+      }
+    ]);
+
+    const trendData = [];
+    const days = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
+    for (let i = 0; i < 7; i++) {
+      const d = new Date(sevenDaysAgo);
+      d.setDate(d.getDate() + i);
+      const dateStr = d.toISOString().split("T")[0];
+      const match = trendJobs.find(t => t._id === dateStr);
+      trendData.push({
+        name: days[d.getDay()],
+        revenue: match ? match.revenue : 0,
+        bookings: match ? match.bookings : 0
+      });
+    }
+
     sendSuccess(res, "Stats fetched successfully.", {
       overview: {
         totalUsers,
@@ -67,6 +101,7 @@ export const getStats = async (_req: AuthRequest, res: Response): Promise<void> 
       },
       recentUsers,
       bookingsByStatus,
+      trendData,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to fetch stats.";
@@ -77,8 +112,8 @@ export const getStats = async (_req: AuthRequest, res: Response): Promise<void> 
 // ── GET /api/admin/users ──────────────────────────────────────
 export const getUsers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 20);
     const role = req.query.role as string | undefined;
     const search = req.query.search as string | undefined;
     const skip = (page - 1) * limit;
@@ -129,11 +164,30 @@ export const deleteUser = async (req: AuthRequest, res: Response): Promise<void>
   }
 };
 
+// ── PATCH /api/admin/users/:id/block ──────────────────────────
+export const toggleBlockUser = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const user = await User.findById(req.params.id);
+    if (!user) { sendError(res, "User not found.", 404); return; }
+    if (user.role === "admin") { sendError(res, "Cannot block an admin account.", 403); return; }
+
+    user.isBlocked = !user.isBlocked;
+    await user.save();
+
+    sendSuccess(res, `User ${user.isBlocked ? "blocked" : "unblocked"} successfully.`, {
+      isBlocked: user.isBlocked,
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to toggle block status.";
+    sendError(res, message, 500);
+  }
+};
+
 // ── GET /api/admin/workers ────────────────────────────────────
 export const getWorkers = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 20);
     const search = req.query.search as string | undefined;
     const skip = (page - 1) * limit;
 
@@ -222,8 +276,8 @@ export const toggleElite = async (req: AuthRequest, res: Response): Promise<void
 // ── GET /api/admin/bookings ───────────────────────────────────
 export const getBookings = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const page = parseInt(req.query.page as string) || 1;
-    const limit = parseInt(req.query.limit as string) || 20;
+    const page = Math.max(1, parseInt(req.query.page as string) || 1);
+    const limit = Math.max(1, parseInt(req.query.limit as string) || 20);
     const status = req.query.status as string | undefined;
     const skip = (page - 1) * limit;
 

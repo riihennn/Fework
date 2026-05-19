@@ -68,6 +68,8 @@ export const loginUser = async (
   const user = await User.findOne({ email }).select("+password");
   if (!user) throw new Error("Invalid email or password.");
 
+  if (user.isBlocked) throw new Error("Your account has been blocked by the admin.");
+
   const isMatch = await user.comparePassword(password);
   if (!isMatch) throw new Error("Invalid email or password.");
 
@@ -93,6 +95,8 @@ export const googleLogin = async (
   const user = await User.findOne({ email });
   if (!user) throw new Error("User not registered.");
 
+  if (user.isBlocked) throw new Error("Your account has been blocked by the admin.");
+
   const token = signToken({ id: user._id.toString(), role: user.role });
 
   return {
@@ -113,5 +117,6 @@ export const googleLogin = async (
 export const getMe = async (userId: string): Promise<IUser> => {
   const user = await User.findById(userId);
   if (!user) throw new Error("User not found.");
+  if (user.isBlocked) throw new Error("Your account has been blocked by the admin.");
   return user;
 };

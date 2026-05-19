@@ -13,10 +13,11 @@ import {
   ArrowRight, 
   ArrowLeft,
   ShieldCheck,
-  Loader2
+  Loader2,
+  AlertCircle
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { signIn, useSession } from "next-auth/react";
+import { signIn, useSession, signOut } from "next-auth/react";
 import { useAuthStore } from "@/store/authStore";
 
 function ClientSignupForm() {
@@ -53,6 +54,16 @@ function ClientSignupForm() {
           const { user } = useAuthStore.getState();
           router.push(user?.role === "worker" ? "/worker" : "/");
         } else {
+          // Check if there was an error other than "User not registered."
+          const err = useAuthStore.getState().error;
+          if (err && err !== "User not registered.") {
+            // It failed because of something else (like being blocked)
+            signOut({ redirect: false });
+            return;
+          }
+          // Clear the "User not registered." expected error
+          clearError();
+
           // New user — fill in Google details and continue to step 2
           setFormData(prev => ({
             ...prev,
@@ -127,6 +138,21 @@ function ClientSignupForm() {
           </div>
 
           <div className="bg-white rounded-[32px] shadow-[0_20px_50px_rgba(0,0,0,0.05)] border border-gray-100 p-8 md:p-12">
+            {/* Error alert */}
+            <AnimatePresence mode="wait">
+              {error && (
+                <motion.div
+                  initial={{ opacity: 0, height: 0 }}
+                  animate={{ opacity: 1, height: "auto" }}
+                  exit={{ opacity: 0, height: 0 }}
+                  className="mb-6 p-4 rounded-xl bg-rose-50 border border-rose-100 flex items-start gap-3 text-rose-600 text-sm"
+                >
+                  <AlertCircle size={18} className="shrink-0 mt-0.5" />
+                  <p>{error}</p>
+                </motion.div>
+              )}
+            </AnimatePresence>
+
             <form onSubmit={handleNext}>
               <AnimatePresence mode="wait">
                 {step === 1 ? (
