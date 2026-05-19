@@ -14,6 +14,9 @@ export interface IUser extends Document {
   role: UserRole;
   avatar?: string;
   city?: string;
+  address?: string;
+  state?: string;
+  pincode?: string;
   isVerified: boolean;
   isBlocked: boolean;
   createdAt: Date;

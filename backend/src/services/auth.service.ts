@@ -13,6 +13,7 @@ export interface WorkerProfileInput {
   city?: string;
   state?: string;
   pincode?: string;
+  skills?: string[];
 }
 
 // ── Register ────────────────────────────────────────────────
@@ -23,12 +24,25 @@ export const registerUser = async (
   role: UserRole,
   phone?: string,
   workerProfile?: WorkerProfileInput,
-  city?: string
+  city?: string,
+  address?: string,
+  state?: string,
+  pincode?: string
 ): Promise<{ user: Partial<IUser>; token: string }> => {
   const existing = await User.findOne({ email });
   if (existing) throw new Error("An account with this email already exists.");
 
-  const user = await User.create({ name, email, password, role, phone, city: city || "" });
+  const user = await User.create({
+    name,
+    email,
+    password,
+    role,
+    phone,
+    city: city || "",
+    address: address || "",
+    state: state || "",
+    pincode: pincode || "",
+  });
 
   // If registering as a worker, create their professional profile
   if (role === "worker") {
@@ -36,6 +50,7 @@ export const registerUser = async (
       user: user._id,
       category: workerProfile?.category || "",
       bio: workerProfile?.bio || "",
+      skills: workerProfile?.skills || [],
       experience: workerProfile?.experience || "",
       hourlyRate: workerProfile?.hourlyRate || 0,
       location: workerProfile?.location || "",
@@ -55,6 +70,9 @@ export const registerUser = async (
       role: user.role,
       avatar: user.avatar,
       city: user.city,
+      address: user.address,
+      state: user.state,
+      pincode: user.pincode,
       isVerified: user.isVerified,
     },
     token,

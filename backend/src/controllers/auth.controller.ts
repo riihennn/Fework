@@ -20,6 +20,8 @@ const registerSchema = z.object({
   city: z.string().optional(),
   state: z.string().optional(),
   pincode: z.string().optional(),
+  address: z.string().optional(),
+  skills: z.array(z.string()).optional(),
 });
 
 const loginSchema = z.object({
@@ -49,13 +51,20 @@ export const register = async (req: Request, res: Response): Promise<void> => {
     }
     const {
       name, email, password, role, phone,
-      category, bio, experience, hourlyRate, location, city, state, pincode
+      category, bio, experience, hourlyRate, location, city, state, pincode, address, skills
     } = parsed.data;
 
     const result = await authService.registerUser(
-      name, email, password, role as UserRole, phone,
-      { category, bio, experience, hourlyRate, location, city, state, pincode },
-      city
+      name,
+      email,
+      password,
+      role as UserRole,
+      phone,
+      { category, bio, experience, hourlyRate, location, city, state, pincode, skills },
+      city,
+      address,
+      state,
+      pincode
     );
 
     res.cookie("token", result.token, cookieOptions);

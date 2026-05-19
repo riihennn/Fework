@@ -14,7 +14,8 @@ import {
   ArrowLeft,
   ShieldCheck,
   Loader2,
-  AlertCircle
+  AlertCircle,
+  Compass
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, useSession, signOut } from "next-auth/react";
@@ -30,6 +31,57 @@ function ClientSignupForm() {
   const { register, googleLogin, isLoading, error, clearError } = useAuthStore();
   const { data: session, status } = useSession();
   const [step, setStep] = useState(1);
+  const [isLocating, setIsLocating] = useState(false);
+
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
+          );
+          const data = await response.json();
+          if (data && data.address) {
+            const addr = data.address;
+            
+            // Construct a readable address from Nominatim details
+            const road = addr.road || addr.suburb || addr.neighbourhood || "";
+            const county = addr.county || addr.district || "";
+            const streetAddress = [road, county].filter(Boolean).join(", ");
+            
+            const cityName = addr.city || addr.town || addr.village || addr.municipality || "";
+            const stateName = addr.state || "";
+            const pincodeVal = addr.postcode || "";
+
+            setFormData(prev => ({
+              ...prev,
+              address: streetAddress || data.display_name || prev.address,
+              city: cityName || prev.city,
+              state: stateName || prev.state,
+              pincode: pincodeVal || prev.pincode
+            }));
+          }
+        } catch (error) {
+          console.error("Error geocoding location:", error);
+          alert("Failed to retrieve address details for your location.");
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        alert("Error retrieving geolocation. Please make sure location access is enabled.");
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
 
   // Form State
   const [formData, setFormData] = useState({
@@ -99,7 +151,10 @@ function ClientSignupForm() {
         "client",
         formData.phone || undefined,
         undefined, // no worker profile
-        formData.city || undefined
+        formData.city || undefined,
+        formData.address || undefined,
+        formData.state || undefined,
+        formData.pincode || undefined
       );
       router.push("/"); // Redirect to home after successful signup
     } catch {
@@ -309,7 +364,27 @@ function ClientSignupForm() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-bold text-[#0F172A] ml-1">Address</label>
+                        <div className="flex justify-between items-center ml-1">
+                          <label className="text-sm font-bold text-[#0F172A]">Address</label>
+                          <button
+                            type="button"
+                            onClick={handleGetCurrentLocation}
+                            disabled={isLocating}
+                            className="text-xs text-teal-600 hover:text-teal-700 font-bold flex items-center gap-1.5 active:scale-95 transition-all disabled:opacity-50"
+                          >
+                            {isLocating ? (
+                              <>
+                                <Loader2 className="animate-spin" size={14} />
+                                Locating...
+                              </>
+                            ) : (
+                              <>
+                                <Compass size={14} />
+                                Use my current location
+                              </>
+                            )}
+                          </button>
+                        </div>
                         <div className="relative group">
                           <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-teal-600 transition-colors" size={20} />
                           <input 
@@ -322,21 +397,37 @@ function ClientSignupForm() {
                         </div>
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
-                        <input 
-                          required
-                          placeholder="City"
-                          className="w-full h-14 px-6 rounded-2xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
-                          value={formData.city}
-                          onChange={(e) => updateField("city", e.target.value)}
-                        />
-                        <input 
-                          required
-                          placeholder="Pincode"
-                          className="w-full h-14 px-6 rounded-2xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
-                          value={formData.pincode}
-                          onChange={(e) => updateField("pincode", e.target.value)}
-                        />
+                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-[#0F172A] ml-1">City</label>
+                          <input 
+                            required
+                            placeholder="City"
+                            className="w-full h-14 px-6 rounded-2xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
+                            value={formData.city}
+                            onChange={(e) => updateField("city", e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-[#0F172A] ml-1">State</label>
+                          <input 
+                            required
+                            placeholder="State"
+                            className="w-full h-14 px-6 rounded-2xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
+                            value={formData.state}
+                            onChange={(e) => updateField("state", e.target.value)}
+                          />
+                        </div>
+                        <div className="space-y-1.5">
+                          <label className="text-xs font-bold text-[#0F172A] ml-1">Pincode</label>
+                          <input 
+                            required
+                            placeholder="Pincode"
+                            className="w-full h-14 px-6 rounded-2xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
+                            value={formData.pincode}
+                            onChange={(e) => updateField("pincode", e.target.value)}
+                          />
+                        </div>
                       </div>
                     </div>
                   </motion.div>

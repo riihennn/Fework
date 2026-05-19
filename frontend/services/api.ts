@@ -8,6 +8,9 @@ export interface AuthUser {
   role: "client" | "worker" | "admin";
   avatar?: string;
   city?: string;
+  address?: string;
+  state?: string;
+  pincode?: string;
   isVerified: boolean;
 }
 
@@ -20,6 +23,7 @@ export interface WorkerProfile {
   city?: string;
   state?: string;
   pincode?: string;
+  skills?: string[];
 }
 
 export interface WorkerPublic {
@@ -108,10 +112,13 @@ export const authApi = {
     role: "client" | "worker",
     phone?: string,
     workerProfile?: WorkerProfile,
-    city?: string
+    city?: string,
+    address?: string,
+    state?: string,
+    pincode?: string
   ) =>
     request<{ user: AuthUser; token: string }>("/auth/register", "POST", {
-      name, email, password, role, phone, city, ...workerProfile,
+      name, email, password, role, phone, city, address, state, pincode, ...workerProfile,
     }),
 
   me: () =>

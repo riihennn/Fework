@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState, useEffect } from "react";
+import React, { useState, useEffect, useRef } from "react";
 import Link from "next/link";
 import { motion as m, AnimatePresence } from "framer-motion";
 import { 
@@ -28,21 +28,62 @@ import {
   Shield,
   Snowflake,
   BrickWall,
-  AlertCircle
+  AlertCircle,
+  X,
+  Search,
+  Compass
 } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, useSession, signOut } from "next-auth/react";
 import { useAuthStore } from "@/store/authStore";
 
-const skillCategories = [
-  { id: "plumber", name: "Plumber", icon: Droplets, color: "text-blue-600 bg-blue-50" },
-  { id: "electrician", name: "Electrician", icon: Zap, color: "text-amber-600 bg-amber-50" },
-  { id: "carpenter", name: "Carpenter", icon: Hammer, color: "text-orange-600 bg-orange-50" },
-  { id: "painter", name: "Painter", icon: Paintbrush, color: "text-rose-600 bg-rose-50" },
-  { id: "mechanic", name: "Mechanic", icon: Cog, color: "text-slate-600 bg-slate-50" },
-  { id: "welder", name: "Welder", icon: Shield, color: "text-indigo-600 bg-indigo-50" },
-  { id: "ac", name: "AC Technician", icon: Snowflake, color: "text-cyan-600 bg-cyan-50" },
-  { id: "mason", name: "Mason", icon: BrickWall, color: "text-stone-600 bg-stone-50" },
+const AVAILABLE_SKILLS = [
+  "Electrician",
+  "Plumber",
+  "AC Technician",
+  "TV Repair Technician",
+  "Refrigerator Technician",
+  "Washing Machine Technician",
+  "Water Purifier Technician",
+  "Generator Technician",
+  "CCTV Installer",
+  "Solar Panel Technician",
+  "Internet/WiFi Technician",
+  "Mobile Repair Technician",
+  "Computer Technician",
+  "Carpenter",
+  "Mason",
+  "Tiles Worker",
+  "Painter",
+  "Welder",
+  "Steel Fabricator",
+  "False Ceiling Worker",
+  "Interior Designer",
+  "POP Worker",
+  "Glass Installer",
+  "Roofing Worker",
+  "House Cleaner",
+  "Deep Cleaning Worker",
+  "Bathroom Cleaner",
+  "Gardener",
+  "Tree Cutter"
+];
+
+const KERALA_DISTRICTS = [
+  "Alappuzha",
+  "Ernakulam",
+  "Idukki",
+  "Kannur",
+  "Kasaragod",
+  "Kollam",
+  "Kottayam",
+  "Kozhikode",
+  "Malappuram",
+  "Palakkad",
+  "Pathanamthitta",
+  "Thiruvananthapuram",
+  "Thrissur",
+  "Wayanad"
 ];
 
 function WorkerSignupForm() {
@@ -63,6 +104,7 @@ function WorkerSignupForm() {
     password: "",
     confirmPassword: "",
     skill: "",
+    skills: [] as string[],
     experience: "",
     about: "",
     hourlyRate: "",
@@ -74,6 +116,138 @@ function WorkerSignupForm() {
     state: "Kerala",
     pincode: ""
   });
+
+  const [skillInput, setSkillInput] = useState("");
+  const [showSuggestions, setShowSuggestions] = useState(false);
+  const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
+  const suggestionContainerRef = useRef<HTMLDivElement>(null);
+  const [isLocating, setIsLocating] = useState(false);
+
+  const handleGetCurrentLocation = () => {
+    if (!navigator.geolocation) {
+      alert("Geolocation is not supported by your browser");
+      return;
+    }
+    setIsLocating(true);
+    navigator.geolocation.getCurrentPosition(
+      async (position) => {
+        try {
+          const { latitude, longitude } = position.coords;
+          const response = await fetch(
+            `https://nominatim.openstreetmap.org/reverse?format=jsonv2&lat=${latitude}&lon=${longitude}`
+          );
+          const data = await response.json();
+          if (data && data.address) {
+            const addr = data.address;
+            
+            // Construct a readable address from Nominatim details
+            const road = addr.road || addr.suburb || addr.neighbourhood || "";
+            const county = addr.county || addr.district || "";
+            const streetAddress = [road, county].filter(Boolean).join(", ");
+            
+            // Find which Kerala district matches the reverse geocode results
+            const addressString = JSON.stringify(addr).toLowerCase();
+            const matchedDistrict = KERALA_DISTRICTS.find(district => 
+              addressString.includes(district.toLowerCase())
+            ) || "";
+
+            const pincodeVal = addr.postcode || "";
+
+            setFormData(prev => ({
+              ...prev,
+              address: streetAddress || data.display_name || prev.address,
+              city: matchedDistrict || prev.city,
+              state: addr.state || prev.state,
+              pincode: pincodeVal || prev.pincode
+            }));
+          }
+        } catch (error) {
+          console.error("Error geocoding location:", error);
+          alert("Failed to retrieve address details for your location.");
+        } finally {
+          setIsLocating(false);
+        }
+      },
+      (error) => {
+        console.error("Geolocation error:", error);
+        alert("Error retrieving geolocation. Please make sure location access is enabled.");
+        setIsLocating(false);
+      },
+      { enableHighAccuracy: true, timeout: 10000 }
+    );
+  };
+
+  // Click outside suggestions container handler
+  useEffect(() => {
+    function handleClickOutside(event: MouseEvent) {
+      if (
+        suggestionContainerRef.current &&
+        !suggestionContainerRef.current.contains(event.target as Node)
+      ) {
+        setShowSuggestions(false);
+      }
+    }
+    document.addEventListener("mousedown", handleClickOutside);
+    return () => {
+      document.removeEventListener("mousedown", handleClickOutside);
+    };
+  }, []);
+
+  const filteredSkills = AVAILABLE_SKILLS.filter(
+    (skill) =>
+      skill.toLowerCase().includes(skillInput.toLowerCase()) &&
+      !formData.skills.includes(skill)
+  );
+
+  const addSkill = (skill: string) => {
+    if (!formData.skills.includes(skill)) {
+      setFormData((prev) => ({
+        ...prev,
+        skills: [...prev.skills, skill],
+      }));
+    }
+    setSkillInput("");
+    setShowSuggestions(false);
+  };
+
+  const removeSkill = (skill: string) => {
+    setFormData((prev) => ({
+      ...prev,
+      skills: prev.skills.filter((s) => s !== skill),
+    }));
+  };
+
+  const handleKeyDown = (e: React.KeyboardEvent<HTMLInputElement>) => {
+    if (e.key === "ArrowDown") {
+      e.preventDefault();
+      setShowSuggestions(true);
+      setActiveSuggestionIndex((prev) =>
+        filteredSkills.length > 0 ? (prev + 1) % filteredSkills.length : 0
+      );
+    } else if (e.key === "ArrowUp") {
+      e.preventDefault();
+      setShowSuggestions(true);
+      setActiveSuggestionIndex((prev) =>
+        filteredSkills.length > 0
+          ? (prev - 1 + filteredSkills.length) % filteredSkills.length
+          : 0
+      );
+    } else if (e.key === "Enter") {
+      e.preventDefault();
+      if (showSuggestions && filteredSkills[activeSuggestionIndex]) {
+        addSkill(filteredSkills[activeSuggestionIndex]);
+      } else if (skillInput.trim()) {
+        const exactMatch = AVAILABLE_SKILLS.find(
+          (s) => s.toLowerCase() === skillInput.trim().toLowerCase()
+        );
+        if (exactMatch) {
+          addSkill(exactMatch);
+        }
+      }
+    } else if (e.key === "Escape") {
+      setShowSuggestions(false);
+    }
+  };
 
   // When Google OAuth returns to this page, check if user is already registered
   useEffect(() => {
@@ -113,6 +287,10 @@ function WorkerSignupForm() {
         alert("Passwords do not match!");
         return;
       }
+      if (step === 2 && formData.skills.length === 0) {
+        alert("Please add at least one skill category!");
+        return;
+      }
       setStep(prev => prev + 1);
     } else {
       handleComplete();
@@ -129,7 +307,8 @@ function WorkerSignupForm() {
         "worker",
         formData.phone ? `+91${formData.phone}` : undefined,
         {
-          category: formData.skill,
+          category: formData.skills[0] || "",
+          skills: formData.skills,
           bio: formData.about,
           experience: formData.experience,
           hourlyRate: formData.hourlyRate ? Number(formData.hourlyRate) : undefined,
@@ -314,22 +493,70 @@ function WorkerSignupForm() {
                     </div>
 
                     <div className="space-y-4">
-                      <div className="space-y-3">
-                        <label className="text-sm font-bold text-[#0F172A] ml-1">Select Skill Category</label>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-3">
-                          {skillCategories.map((s) => (
-                            <div 
-                              key={s.id}
-                              onClick={() => updateField("skill", s.id)}
-                              className={`p-4 rounded-2xl border-2 transition-all cursor-pointer flex flex-col items-center gap-2 ${formData.skill === s.id ? 'border-teal-600 bg-teal-50/50' : 'border-gray-100 hover:border-gray-200 hover:bg-gray-50'}`}
-                            >
-                              <div className={`w-10 h-10 rounded-xl flex items-center justify-center ${s.color}`}>
-                                <s.icon size={20} />
+                      <div className="space-y-2 relative" ref={suggestionContainerRef}>
+                        <label className="text-sm font-bold text-[#0F172A] ml-1">Select Skill Categories</label>
+                        
+                        {/* Selected Skills Chips */}
+                        {formData.skills.length > 0 && (
+                          <div className="flex flex-wrap gap-2 mb-3">
+                            {formData.skills.map((skill) => (
+                              <div
+                                key={skill}
+                                className="flex items-center gap-1.5 px-3 py-1.5 rounded-xl bg-teal-50 text-teal-700 text-xs font-bold border border-teal-100/50"
+                              >
+                                {skill}
+                                <button
+                                  type="button"
+                                  onClick={() => removeSkill(skill)}
+                                  className="w-4 h-4 rounded-full flex items-center justify-center hover:bg-teal-200/50 text-teal-800 transition-colors"
+                                >
+                                  <X size={12} />
+                                </button>
                               </div>
-                              <span className="text-[10px] font-bold uppercase tracking-wider text-gray-600">{s.name}</span>
-                            </div>
-                          ))}
+                            ))}
+                          </div>
+                        )}
+
+                        {/* Search Input Box */}
+                        <div className="relative group">
+                          <Search className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-teal-600 transition-colors" size={20} />
+                          <input 
+                            type="text"
+                            placeholder="Type to search skills... (e.g. Electrician)"
+                            className="w-full h-14 pl-12 pr-4 rounded-2xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
+                            value={skillInput}
+                            onChange={(e) => {
+                              setSkillInput(e.target.value);
+                              setShowSuggestions(true);
+                              setActiveSuggestionIndex(0);
+                            }}
+                            onFocus={() => setShowSuggestions(true)}
+                            onKeyDown={handleKeyDown}
+                          />
                         </div>
+
+                        {/* Suggestions Dropdown */}
+                        {showSuggestions && skillInput.trim() !== "" && filteredSkills.length > 0 && (
+                          <div className="absolute left-0 right-0 top-full mt-2 bg-white rounded-2xl border border-gray-100 shadow-[0_15px_40px_rgba(0,0,0,0.08)] overflow-hidden z-50 max-h-60 overflow-y-auto">
+                            {filteredSkills.map((skill, index) => (
+                              <button
+                                key={skill}
+                                type="button"
+                                onClick={() => addSkill(skill)}
+                                className={`w-full px-5 py-3 text-left text-sm transition-colors flex items-center justify-between ${
+                                  index === activeSuggestionIndex
+                                    ? "bg-teal-50 text-teal-800 font-medium"
+                                    : "text-gray-700 hover:bg-gray-50"
+                                }`}
+                              >
+                                <span>{skill}</span>
+                                {index === activeSuggestionIndex && (
+                                  <span className="text-xs text-teal-600 font-bold uppercase tracking-widest">Enter to select</span>
+                                )}
+                              </button>
+                            ))}
+                          </div>
+                        )}
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
@@ -430,7 +657,27 @@ function WorkerSignupForm() {
                       </div>
 
                       <div className="space-y-2">
-                        <label className="text-sm font-bold text-[#0F172A] ml-1">Home Address</label>
+                        <div className="flex justify-between items-center ml-1">
+                          <label className="text-sm font-bold text-[#0F172A]">Home Address</label>
+                          <button
+                            type="button"
+                            onClick={handleGetCurrentLocation}
+                            disabled={isLocating}
+                            className="text-xs text-teal-600 hover:text-teal-700 font-bold flex items-center gap-1.5 active:scale-95 transition-all disabled:opacity-50"
+                          >
+                            {isLocating ? (
+                              <>
+                                <Loader2 className="animate-spin" size={14} />
+                                Locating...
+                              </>
+                            ) : (
+                              <>
+                                <Compass size={14} />
+                                Use my current location
+                              </>
+                            )}
+                          </button>
+                        </div>
                         <div className="relative group">
                           <MapPin className="absolute left-4 top-1/2 -translate-y-1/2 text-gray-400 group-focus-within:text-teal-600 transition-colors" size={20} />
                           <input 
@@ -444,13 +691,26 @@ function WorkerSignupForm() {
                       </div>
 
                       <div className="grid grid-cols-2 gap-4">
-                        <input 
-                          required
-                          placeholder="City"
-                          className="w-full h-14 px-6 rounded-2xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
-                          value={formData.city}
-                          onChange={(e) => updateField("city", e.target.value)}
-                        />
+                        <div className="relative">
+                          <select
+                            required
+                            className="w-full h-14 px-5 rounded-2xl border border-gray-200 bg-white text-sm focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all appearance-none cursor-pointer text-[#0F172A] font-medium"
+                            value={formData.city}
+                            onChange={(e) => updateField("city", e.target.value)}
+                          >
+                            <option value="" disabled hidden>Select City (District)</option>
+                            {KERALA_DISTRICTS.map((district) => (
+                              <option key={district} value={district}>
+                                {district}
+                              </option>
+                            ))}
+                          </select>
+                          <div className="pointer-events-none absolute inset-y-0 right-0 flex items-center px-4 text-gray-400">
+                            <svg className="fill-current h-4 w-4" xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20">
+                              <path d="M9.293 12.95l.707.707L15.657 8l-1.414-1.414L10 10.828 5.757 6.586 4.343 8z"/>
+                            </svg>
+                          </div>
+                        </div>
                         <input 
                           required
                           placeholder="Pincode"

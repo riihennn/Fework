@@ -43,6 +43,21 @@ const UserSchema = new Schema<IUser>(
       trim: true,
       default: "",
     },
+    address: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    state: {
+      type: String,
+      trim: true,
+      default: "",
+    },
+    pincode: {
+      type: String,
+      trim: true,
+      default: "",
+    },
     isVerified: {
       type: Boolean,
       default: false,

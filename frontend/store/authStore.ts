@@ -21,7 +21,10 @@ interface AuthActions {
     role: "client" | "worker",
     phone?: string,
     workerProfile?: WorkerProfile,
-    city?: string
+    city?: string,
+    address?: string,
+    state?: string,
+    pincode?: string
   ) => Promise<void>;
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
@@ -64,10 +67,10 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       },
 
       // ── Register ───────────────────────────────────────────────
-      register: async (name, email, password, role, phone, workerProfile, city) => {
+      register: async (name, email, password, role, phone, workerProfile, city, address, state, pincode) => {
         set({ isLoading: true, error: null });
         try {
-          const data = await authApi.register(name, email, password, role, phone, workerProfile, city);
+          const data = await authApi.register(name, email, password, role, phone, workerProfile, city, address, state, pincode);
           set({ user: data.user, isAuthenticated: true, isLoading: false });
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : "Registration failed.";
