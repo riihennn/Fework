@@ -4,7 +4,7 @@ import type { NextRequest } from "next/server";
 /**
  * FEWORK ROUTE GUARD
  *
- * Three user types with completely separate territories:
+ * Four user types with completely separate territories:
  *
  * GUEST (no token)
  *   ✅ /               (homepage)
@@ -16,12 +16,16 @@ import type { NextRequest } from "next/server";
  *   ✅ /               (homepage)
  *   ✅ /findservices/*  (search + profiles)
  *   ✅ /my-bookings
- *   ❌ /worker/*       → /
+ *   ❌ /worker/* /admin/* → /
  *   ❌ /login, /signup → /
  *
  * WORKER (role = "worker")
  *   ✅ /worker/*       (dashboard, jobs, etc.)
  *   ❌ everything else → /worker
+ *
+ * ADMIN (role = "admin")
+ *   ✅ /admin/*        (admin dashboard)
+ *   ❌ everything else → /admin
  */
 
 // Routes workers are allowed to visit
@@ -40,6 +44,14 @@ export function middleware(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // ── ADMIN: locked to /admin/* ────────────────────────────────
+  if (userRole === "admin") {
+    if (!pathname.startsWith("/admin")) {
+      return NextResponse.redirect(new URL("/admin", request.url));
+    }
+    return NextResponse.next();
+  }
+
   // ── WORKER: locked to /worker/* ──────────────────────────────
   if (userRole === "worker") {
     const isAllowed = WORKER_ALLOWED.some(r => pathname.startsWith(r));
@@ -51,8 +63,8 @@ export function middleware(request: NextRequest) {
 
   // ── CLIENT: locked to client territory ──────────────────────
   if (userRole === "client") {
-    // Block from worker territory
-    if (pathname.startsWith("/worker")) {
+    // Block from worker/admin territory
+    if (pathname.startsWith("/worker") || pathname.startsWith("/admin")) {
       return NextResponse.redirect(new URL("/", request.url));
     }
     // Block from login/signup (already authenticated)

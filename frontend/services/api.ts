@@ -5,7 +5,7 @@ export interface AuthUser {
   _id: string;
   name: string;
   email: string;
-  role: "client" | "worker";
+  role: "client" | "worker" | "admin";
   avatar?: string;
   city?: string;
   isVerified: boolean;
@@ -64,7 +64,7 @@ export interface WorkerDashboardData {
 // ─── Core fetch helper ────────────────────────────────────────────
 const request = async <T>(
   path: string,
-  method: "GET" | "POST" | "PUT" | "DELETE" = "GET",
+  method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" = "GET",
   body?: unknown,
   customHeaders?: Record<string, string>
 ): Promise<T> => {
@@ -301,4 +301,100 @@ export const reviewApi = {
   // GET /api/reviews/check/:jobId — check if client already reviewed
   checkReviewed: (jobId: string) =>
     request<{ reviewed: boolean }>(`/reviews/check/${jobId}`, "GET"),
+};
+
+// ─── Admin Types ──────────────────────────────────────────────
+export interface AdminStats {
+  overview: {
+    totalUsers: number;
+    totalWorkers: number;
+    totalBookings: number;
+    totalRevenue: number;
+    clientCount: number;
+    workerCount: number;
+    pendingBookings: number;
+    completedBookings: number;
+    cancelledBookings: number;
+    disputedBookings: number;
+    newUsersThisMonth: number;
+  };
+  recentUsers: AdminUser[];
+  bookingsByStatus: { _id: string; count: number }[];
+}
+
+export interface AdminUser {
+  _id: string;
+  name: string;
+  email: string;
+  role: string;
+  avatar?: string;
+  city?: string;
+  isVerified: boolean;
+  createdAt: string;
+}
+
+export interface AdminWorker {
+  _id: string;
+  category: string;
+  rating: number;
+  totalJobs: number;
+  isAvailable: boolean;
+  isElite: boolean;
+  hourlyRate: number;
+  city: string;
+  createdAt: string;
+  userInfo: { name: string; email: string; avatar?: string };
+}
+
+export interface AdminBooking {
+  _id: string;
+  service: string;
+  description: string;
+  location: string;
+  status: string;
+  scheduledAt: string;
+  estimatedPay: number;
+  actualPay?: number;
+  isUrgent: boolean;
+  paymentStatus: string;
+  createdAt: string;
+  client: { _id: string; name: string; email: string; avatar?: string };
+  worker: { _id: string; user: { name: string; email: string; avatar?: string } };
+}
+
+export interface AdminPagination {
+  page: number;
+  limit: number;
+  total: number;
+  pages: number;
+}
+
+// ─── Admin API ────────────────────────────────────────────────
+export const adminApi = {
+  getStats: () =>
+    request<AdminStats>("/admin/stats", "GET"),
+
+  getUsers: (params?: Record<string, string>) => {
+    const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request<{ users: AdminUser[]; pagination: AdminPagination }>(`/admin/users${qs}`, "GET");
+  },
+
+  deleteUser: (id: string) =>
+    request<null>(`/admin/users/${id}`, "DELETE"),
+
+  getWorkers: (params?: Record<string, string>) => {
+    const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request<{ workers: AdminWorker[]; pagination: AdminPagination }>(`/admin/workers${qs}`, "GET");
+  },
+
+  toggleElite: (id: string) =>
+    request<{ isElite: boolean }>(`/admin/workers/${id}/elite`, "PATCH"),
+
+  getBookings: (params?: Record<string, string>) => {
+    const qs = params ? "?" + new URLSearchParams(params).toString() : "";
+    return request<{ bookings: AdminBooking[]; pagination: AdminPagination }>(`/admin/bookings${qs}`, "GET");
+  },
+
+  updateBookingStatus: (id: string, status: string) =>
+    request<AdminBooking>(`/admin/bookings/${id}/status`, "PATCH", { status }),
 };

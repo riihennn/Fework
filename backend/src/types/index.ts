@@ -2,7 +2,7 @@ import { Request } from "express";
 import { Document, Types } from "mongoose";
 
 // ─── User Roles ───────────────────────────────────────────────
-export type UserRole = "client" | "worker";
+export type UserRole = "client" | "worker" | "admin";
 
 // ─── User Document ────────────────────────────────────────────
 export interface IUser extends Document {
