@@ -316,7 +316,11 @@ function WorkerSignupForm() {
           city: formData.city,
           state: formData.state,
           pincode: formData.pincode,
-        }
+        },
+        formData.city,
+        formData.address,
+        formData.state,
+        formData.pincode
       );
       router.push("/worker");
     } catch {
