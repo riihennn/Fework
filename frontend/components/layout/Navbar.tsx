@@ -43,7 +43,7 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
         {showLinks && (
           <div className="hidden lg:flex items-center gap-8 text-sm font-medium text-gray-600">
             <Link href="/findservices" className="hover:text-[#0F172A] transition-colors">Find Services</Link>
-            <Link href="#" className="hover:text-[#0F172A] transition-colors">Memberships</Link>
+            <Link href="/membership" className="hover:text-[#0F172A] transition-colors">Memberships</Link>
             <Link href="/help" className="hover:text-[#0F172A] transition-colors">Help</Link>
           </div>
         )}

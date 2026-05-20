@@ -93,9 +93,9 @@ export default async function FindServicePage({ searchParams }: PageProps) {
                   <span className="inline-block px-2 py-0.5 bg-teal-600 text-white text-[8px] font-black uppercase tracking-widest rounded mb-3">Pro Benefits</span>
                   <h3 className="text-[#0F172A] font-bold text-base mb-1.5">Instant Booking</h3>
                   <p className="text-slate-500 text-[11px] mb-4 leading-relaxed">Book a top-rated pro in under 60 seconds with Fework Instant.</p>
-                  <button className="w-full py-2.5 bg-[#0F172A] text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-gray-800 transition-all">
+                  <Link href="/membership" className="block w-full py-2.5 bg-[#0F172A] text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-gray-800 transition-all text-center">
                     Learn More
-                  </button>
+                  </Link>
             </div>
           </div>
 
