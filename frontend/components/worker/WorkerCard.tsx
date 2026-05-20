@@ -15,12 +15,12 @@ export default function WorkerCard({ worker }: { worker: WorkerPublic }) {
   return (
     <motion.div
       whileHover={{ y: -4 }}
-      className="bg-white rounded-[24px] border border-gray-200 p-6 md:p-8 flex flex-col md:flex-row gap-8 items-center justify-between shadow-[0_10px_30px_rgba(0,0,0,0.02)] relative group"
+      className="bg-white rounded-[24px] border border-gray-200 p-5 md:p-6 flex flex-col md:flex-row gap-6 items-center justify-between shadow-[0_10px_30px_rgba(0,0,0,0.02)] relative group"
     >
       {/* Left side: Avatar and Availability */}
       <div className="flex flex-col items-center gap-4 shrink-0">
         <div className="relative">
-          <div className="w-32 h-32 rounded-full overflow-hidden border-[3px] border-[#0F172A] bg-gray-50 flex items-center justify-center">
+          <div className="w-24 h-24 rounded-full overflow-hidden border-[3px] border-[#0F172A] bg-gray-50 flex items-center justify-center">
             {worker.user.avatar ? (
               <img
                 src={worker.user.avatar}
@@ -57,7 +57,7 @@ export default function WorkerCard({ worker }: { worker: WorkerPublic }) {
         </div>
 
         {/* Row of stats */}
-        <div className="flex flex-wrap justify-center md:justify-start gap-x-8 gap-y-4 items-center">
+        <div className="flex flex-wrap justify-center md:justify-start gap-x-6 gap-y-4 items-center">
           {/* Rating */}
           <div className="flex flex-col items-center md:items-start">
             <div className="flex items-center gap-1.5 text-amber-400 mb-1">
@@ -84,14 +84,14 @@ export default function WorkerCard({ worker }: { worker: WorkerPublic }) {
           </div>
 
           {/* Experience */}
-          <div className="flex flex-col items-center md:items-start border-l border-gray-100 pl-8">
+          <div className="flex flex-col items-center md:items-start border-l border-gray-100 pl-6">
             <span className="text-base font-extrabold text-[#0F172A]">{worker.experience || "0"} Yrs</span>
             <span className="text-[9px] text-gray-400 font-black uppercase tracking-widest">Experience</span>
 
           </div>
 
           {/* Hourly Rate */}
-          <div className="flex flex-col items-center md:items-start border-l border-gray-100 pl-8">
+          <div className="flex flex-col items-center md:items-start border-l border-gray-100 pl-6">
             <span className="text-base font-extrabold text-[#0F172A]">₹ {worker.hourlyRate || "0"}</span>
             <span className="text-[9px] text-gray-400 font-black uppercase tracking-widest">Per Hour</span>
           </div>
@@ -99,7 +99,7 @@ export default function WorkerCard({ worker }: { worker: WorkerPublic }) {
       </div>
 
       {/* Right side: Actions */}
-      <div className="w-full md:w-52 flex flex-col gap-3 shrink-0">
+      <div className="w-full md:w-40 flex flex-col gap-3 shrink-0">
         <Link
           href={`/findservices/${worker._id}`}
           className="w-full py-3.5 bg-[#0F172A] text-white rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-gray-800 transition-all text-center block"

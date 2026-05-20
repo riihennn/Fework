@@ -138,7 +138,7 @@ export default function FilterSidebar() {
   };
 
   return (
-    <aside className="w-80 border-r border-slate-100 hidden lg:flex flex-col p-6 sticky top-16 h-[calc(100vh-64px)] overflow-y-auto bg-white shrink-0 scrollbar-thin">
+    <aside className="w-64 border-r border-slate-100 hidden lg:flex flex-col py-6 pr-6 sticky top-16 h-[calc(100vh-64px)] overflow-y-auto bg-white shrink-0 scrollbar-thin">
       {/* Title */}
       <div className="flex items-center gap-2 mb-6">
         <SlidersHorizontal size={14} className="text-[#0F172A]" />
@@ -277,16 +277,6 @@ export default function FilterSidebar() {
         )}
       </div>
 
-      {/* Pro Benefits Promo Card */}
-      <div className="mt-auto bg-gradient-to-br from-teal-50/60 to-teal-50/20 border border-teal-100/30 rounded-[24px] p-5 relative overflow-hidden group">
-        <div className="absolute top-[-20%] right-[-20%] w-28 h-28 bg-teal-500/10 rounded-full blur-2xl transition-all"></div>
-        <span className="inline-block px-2 py-0.5 bg-teal-600 text-white text-[8px] font-black uppercase tracking-widest rounded mb-3">Pro Benefits</span>
-        <h3 className="text-[#0F172A] font-bold text-base mb-1.5">Instant Booking</h3>
-        <p className="text-slate-500 text-[11px] mb-4 leading-relaxed">Book a top-rated pro in under 60 seconds with Fework Instant.</p>
-        <button className="w-full py-2.5 bg-[#0F172A] text-white rounded-xl font-black text-[9px] uppercase tracking-widest hover:bg-gray-800 transition-all">
-          Learn More
-        </button>
-      </div>
     </aside>
   );
 }
