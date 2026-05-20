@@ -29,7 +29,7 @@ export const getAllWorkers = async (
 
     // 1. Filter by category
     if (category && category !== "All") {
-      query.category = category as string;
+      query.category = { $regex: `^${category}$`, $options: "i" };
     }
 
     // 2. Filter by city

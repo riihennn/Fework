@@ -7,86 +7,105 @@ import Link from "next/link";
 import { WorkerPublic } from "@/services/api";
 
 export default function WorkerCard({ worker }: { worker: WorkerPublic }) {
+  const formatCategory = (cat?: string) => {
+    if (!cat) return "Partner";
+    return cat.split(" ").map(w => w.charAt(0).toUpperCase() + w.slice(1).toLowerCase()).join(" ");
+  };
+
   return (
     <motion.div
       whileHover={{ y: -4 }}
-      className="bg-white rounded-[40px] border border-gray-100 p-6 md:p-8 flex flex-col md:flex-row gap-10 items-center shadow-[0_15px_40px_rgba(0,0,0,0.02)] relative group overflow-hidden"
+      className="bg-white rounded-[24px] border border-gray-200 p-6 md:p-8 flex flex-col md:flex-row gap-8 items-center justify-between shadow-[0_10px_30px_rgba(0,0,0,0.02)] relative group"
     >
-      {/* Avatar */}
-      <div className="relative">
-        <div className="w-32 h-32 md:w-40 md:h-40 rounded-[32px] overflow-hidden ring-8 ring-gray-50 bg-gray-100 flex items-center justify-center">
-          {worker.user.avatar ? (
-            <img src={worker.user.avatar} className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700" alt={worker.user.name} />
-          ) : (
-            <span className="text-4xl font-black text-gray-300">
-              {worker.user.name?.[0]?.toUpperCase() ?? "?"}
-            </span>
-          )}
-        </div>
-        <div className="absolute bottom-2 right-2 w-4 h-4 bg-teal-500 rounded-full border-2 border-white shadow" title="Online" />
-      </div>
-
-      {/* Info */}
-      <div className="flex-1 text-center md:text-left">
-        <div className="flex flex-col md:flex-row md:items-center gap-2 mb-4">
-          <h3 className="text-2xl font-black text-[#0F172A]">{worker.user.name}</h3>
-          <div className="flex items-center justify-center md:justify-start gap-3">
-            <div className="flex items-center gap-1 text-[9px] font-black text-teal-600 uppercase tracking-widest bg-teal-50 px-2 py-1 rounded-md">
-              <CheckCircle2 size={12} /> Verified
-            </div>
-            <div className="text-[10px] text-gray-400 font-bold uppercase tracking-widest flex items-center gap-1">
-              <MapPin size={12} /> {worker.city}{worker.state ? `, ${worker.state}` : ""}
-            </div>
+      {/* Left side: Avatar and Availability */}
+      <div className="flex flex-col items-center gap-4 shrink-0">
+        <div className="relative">
+          <div className="w-32 h-32 rounded-full overflow-hidden border-[3px] border-[#0F172A] bg-gray-50 flex items-center justify-center">
+            {worker.user.avatar ? (
+              <img
+                src={worker.user.avatar}
+                className="w-full h-full object-cover group-hover:scale-105 transition-transform duration-700"
+                alt={worker.user.name}
+              />
+            ) : (
+              <span className="text-4xl font-black text-gray-300">
+                {worker.user.name?.[0]?.toUpperCase() ?? "?"}
+              </span>
+            )}
+          </div>
+          {/* Verified Badge overlapping the bottom border */}
+          <div className="absolute -bottom-2 left-1/2 -translate-y-0.5 -translate-x-1/2 bg-[#0F172A] text-white text-[9px] font-extrabold tracking-wider flex items-center gap-1.5 px-3 py-1 rounded-full border-2 border-white shadow-sm whitespace-nowrap">
+            <CheckCircle2 size={10} className="fill-white text-[#0F172A]" /> Verified
           </div>
         </div>
 
-        {worker.bio && (
-          <p className="text-sm text-gray-400 mb-4 max-w-md">{worker.bio}</p>
-        )}
-
-        <div className="grid grid-cols-3 gap-4 mb-6">
-          <div className="text-center md:text-left">
-            <div className="flex items-center justify-center md:justify-start gap-1 text-amber-500 font-black text-lg">
-              <Star size={16} fill="currentColor" /> {worker.rating > 0 ? worker.rating.toFixed(1) : "New"}
-            </div>
-            <div className="text-[9px] text-gray-400 font-black uppercase tracking-widest">{worker.totalJobs} Jobs Done</div>
-          </div>
-          <div className="text-center md:text-left border-x border-gray-100">
-            <div className="text-lg font-black text-[#0F172A] capitalize">{worker.experience || "—"} yrs</div>
-            <div className="text-[9px] text-gray-400 font-black uppercase tracking-widest">Experience</div>
-          </div>
-          <div className="text-center md:text-left">
-            <div className="text-lg font-black text-[#0F172A] flex items-center justify-center md:justify-start gap-0.5">
-              <span className="text-xs text-gray-300">₹</span>{worker.hourlyRate || "—"}
-            </div>
-            <div className="text-[9px] text-gray-400 font-black uppercase tracking-widest">Per Hour</div>
-          </div>
-        </div>
-
-        <div className="flex flex-wrap justify-center md:justify-start gap-2">
-          <span className="px-3 py-1.5 bg-teal-50 text-teal-700 rounded-xl text-[10px] font-bold uppercase tracking-wider capitalize">
-            {worker.category}
-          </span>
+        {/* Availability Badge */}
+        <div className="flex items-center gap-1.5 bg-[#E8F8F0] text-[#1E7E34] text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full mt-1">
+          <span className="w-1.5 h-1.5 bg-[#28A745] rounded-full animate-pulse" />
+          Available Now
         </div>
       </div>
 
-      {/* Actions */}
-      <div className="w-full md:w-56 flex flex-col gap-3">
+      {/* Middle side: Details */}
+      <div className="flex-1 text-center md:text-left flex flex-col justify-center">
+        <h3 className="text-2xl font-black text-[#0F172A] capitalize mb-0.5">{worker.user.name}</h3>
+        <p className="text-sm font-bold text-gray-500 mb-2">{formatCategory(worker.category)}</p>
+
+        <div className="flex items-center justify-center md:justify-start gap-1 text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-6">
+          <MapPin size={12} className="text-[#0F172A]" />
+          <span>{worker.city?.toUpperCase()}{worker.state ? `, ${worker.state.toUpperCase()}` : ""}</span>
+        </div>
+
+        {/* Row of stats */}
+        <div className="flex flex-wrap justify-center md:justify-start gap-x-8 gap-y-4 items-center">
+          {/* Rating */}
+          <div className="flex flex-col items-center md:items-start">
+            <div className="flex items-center gap-1.5 text-amber-400 mb-1">
+              <div className="flex items-center gap-0.5">
+                {[1, 2, 3, 4, 5].map((star) => (
+                  <Star
+                    key={star}
+                    size={14}
+                    fill={star <= Math.round(worker.rating ?? 0) ? "currentColor" : "none"}
+                    className="text-amber-400"
+                  />
+                ))}
+              </div>
+              {worker.rating > 0 ? (
+                <span className="text-xs font-black text-[#0F172A] ml-1 flex items-center gap-1">
+                  <span>{worker.rating.toFixed(1)}</span>
+                  <span className="text-gray-400 font-bold text-[10px]">({worker.totalJobs || 0} jobs)</span>
+                </span>
+              ) : (
+                <span className="text-xs font-bold text-gray-400 ml-1">New</span>
+              )}
+            </div>
+            <span className="text-[9px] text-gray-400 font-black uppercase tracking-widest">Rating</span>
+          </div>
+
+          {/* Experience */}
+          <div className="flex flex-col items-center md:items-start border-l border-gray-100 pl-8">
+            <span className="text-base font-extrabold text-[#0F172A]">{worker.experience || "0"} Yrs</span>
+            <span className="text-[9px] text-gray-400 font-black uppercase tracking-widest">Experience</span>
+            
+          </div>
+
+          {/* Hourly Rate */}
+          <div className="flex flex-col items-center md:items-start border-l border-gray-100 pl-8">
+            <span className="text-base font-extrabold text-[#0F172A]">₹ {worker.hourlyRate || "0"}</span>
+            <span className="text-[9px] text-gray-400 font-black uppercase tracking-widest">Per Hour</span>
+          </div>
+      </div>
+      </div>
+
+      {/* Right side: Actions */}
+      <div className="w-full md:w-52 flex flex-col gap-3 shrink-0">
         <Link
           href={`/findservices/${worker._id}`}
-          className="w-full py-4 bg-[#0F172A] text-white rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-gray-800 transition-all shadow-xl shadow-gray-200 text-center block"
+          className="w-full py-3.5 bg-[#0F172A] text-white rounded-xl font-black text-[11px] uppercase tracking-widest hover:bg-gray-800 transition-all text-center block"
         >
           Book Now
         </Link>
-        <Link
-          href={`/findservices/${worker._id}`}
-          className="w-full py-4 border-2 border-gray-100 text-[#0F172A] rounded-2xl font-black text-[11px] uppercase tracking-widest hover:bg-gray-50 transition-all text-center block"
-        >
-          View Profile
-        </Link>
-        <div className="flex items-center justify-center gap-1.5 text-teal-600 font-black text-[9px] uppercase tracking-widest mt-2">
-          <Clock size={12} /> Available Now
-        </div>
       </div>
     </motion.div>
   );
