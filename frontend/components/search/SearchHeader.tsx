@@ -158,7 +158,7 @@ export default function SearchHeader({ totalWorkers }: { totalWorkers: number })
       </div>
 
       {/* Indeed-style prominent Search Bar */}
-      <div className="w-full bg-white rounded-3xl border border-slate-200/80 shadow-[0_15px_40px_rgba(15,23,42,0.05)] p-2 md:p-3 transition-all duration-300">
+      <div className="w-full bg-white rounded-3xl border border-gray-400 shadow-[0_15px_40px_rgba(15,23,42,0.05)] p-2 md:p-3 transition-all duration-300">
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-0">
 
           {/* WHAT INPUT */}
@@ -171,7 +171,7 @@ export default function SearchHeader({ totalWorkers }: { totalWorkers: number })
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="w-full bg-transparent text-sm font-bold text-[#0F172A] placeholder-slate-400 focus:outline-none h-6 min-w-0"
+                className="w-full bg-transparent text-sm  text-[#0F172A] placeholder-slate-400 focus:outline-none h-6 min-w-0"
               />
             </div>
           </div>
@@ -186,7 +186,7 @@ export default function SearchHeader({ totalWorkers }: { totalWorkers: number })
                 value={locationQuery}
                 onChange={(e) => setLocationQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="w-full bg-transparent text-sm font-bold text-[#0F172A] placeholder-slate-400 focus:outline-none h-6 min-w-0"
+                className="w-full bg-transparent text-sm text-[#0F172A] placeholder-slate-400 focus:outline-none h-6 min-w-0"
               />
             </div>
           </div>

@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Bell, UserCircle, LogOut, Briefcase, Settings, ChevronDown, Clock } from "lucide-react";
+import { Bell, UserCircle, LogOut, Briefcase, Settings, ChevronDown, Clock, MessageCircle, CheckCircle2, Sparkles } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -16,7 +16,9 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
   const { isAuthenticated, logout, user } = useAuthStore();
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isNotifDropdownOpen, setIsNotifDropdownOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
+  const notifDropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
     await logout();
@@ -28,6 +30,9 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
     const handleClickOutside = (event: MouseEvent) => {
       if (dropdownRef.current && !dropdownRef.current.contains(event.target as Node)) {
         setIsDropdownOpen(false);
+      }
+      if (notifDropdownRef.current && !notifDropdownRef.current.contains(event.target as Node)) {
+        setIsNotifDropdownOpen(false);
       }
     };
     document.addEventListener("mousedown", handleClickOutside);
@@ -49,17 +54,69 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
         )}
       </div>
 
-      <div className="flex items-center gap-4">
+      <div className="flex items-center gap-2">
         {isAuthenticated && (
-          <button className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 relative transition-all active:scale-95 group">
-            <Bell size={20} className="group-hover:text-[#0F172A] transition-colors" />
-            <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white shadow-sm" />
-          </button>
+          <>
+            <Link
+              href={user?.role === "worker" ? "/worker/chats" : "/chats"}
+              className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 relative transition-all active:scale-95 group"
+            >
+              <MessageCircle size={20} className="group-hover:text-[#0F172A] transition-colors" />
+              <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-teal-500 rounded-full border-2 border-white shadow-sm" />
+            </Link>
+
+            <div className="relative" ref={notifDropdownRef}>
+              <button 
+                onClick={() => setIsNotifDropdownOpen(!isNotifDropdownOpen)}
+                className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 relative transition-all active:scale-95 group"
+              >
+                <Bell size={20} className="group-hover:text-[#0F172A] transition-colors" />
+                <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-rose-500 rounded-full border-2 border-white shadow-sm" />
+              </button>
+
+              <AnimatePresence>
+                {isNotifDropdownOpen && (
+                  <motion.div 
+                    initial={{ opacity: 0, y: 10, scale: 0.95 }}
+                    animate={{ opacity: 1, y: 0, scale: 1 }}
+                    exit={{ opacity: 0, y: 10, scale: 0.95 }}
+                    className="absolute right-0 mt-3 w-80 bg-white border border-gray-100 rounded-[24px] shadow-[0_20px_50px_rgba(0,0,0,0.08)] p-4 z-[60]"
+                  >
+                    <div className="flex justify-between items-center mb-3 pb-2 border-b border-gray-50">
+                      <h4 className="text-xs font-black text-[#0F172A] uppercase tracking-wider">Notifications</h4>
+                      <button className="text-[10px] font-bold text-teal-600 hover:text-[#0F172A]">Mark read</button>
+                    </div>
+
+                    <div className="space-y-3 max-h-[260px] overflow-y-auto pr-1">
+                      {[
+                        { id: 1, title: "Booking Confirmed", desc: "Your booking with Ramesh K. (Electrician) is scheduled for today at 4:00 PM.", time: "5m ago", type: "success" },
+                        { id: 2, title: "New Message", desc: "Sarah M. sent you a message: 'I can arrive 10 mins early if that works.'", time: "1h ago", type: "chat" },
+                        { id: 3, title: "Pro Active", desc: "Welcome to Fework Pro! Your membership benefits are now active.", time: "1d ago", type: "info" }
+                      ].map((n) => (
+                        <div key={n.id} className="p-2 hover:bg-gray-50 rounded-xl transition-all flex gap-3 text-left">
+                          <div className="w-8 h-8 rounded-lg bg-gray-50 flex items-center justify-center shrink-0 border border-gray-100 mt-0.5">
+                            {n.type === "success" && <CheckCircle2 className="text-emerald-500" size={16} />}
+                            {n.type === "chat" && <MessageCircle className="text-teal-500" size={16} />}
+                            {n.type === "info" && <Sparkles className="text-amber-500" size={16} />}
+                          </div>
+                          <div>
+                            <p className="text-[11px] font-black text-[#0F172A] tracking-tight leading-none">{n.title}</p>
+                            <p className="text-[10px] text-gray-500 mt-1 leading-normal">{n.desc}</p>
+                            <span className="text-[9px] text-gray-400 font-bold block mt-1">{n.time}</span>
+                          </div>
+                        </div>
+                      ))}
+                    </div>
+                  </motion.div>
+                )}
+              </AnimatePresence>
+            </div>
+          </>
         )}
 
         {isAuthenticated ? (
           <div className="relative" ref={dropdownRef}>
-            <button 
+            <button
               onClick={() => setIsDropdownOpen(!isDropdownOpen)}
               className="flex items-center gap-3 pl-2 border-l border-gray-100 hover:bg-gray-50/50 p-1.5 rounded-2xl transition-all"
             >
@@ -74,7 +131,7 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
 
             <AnimatePresence>
               {isDropdownOpen && (
-                <motion.div 
+                <motion.div
                   initial={{ opacity: 0, y: 10, scale: 0.95 }}
                   animate={{ opacity: 1, y: 0, scale: 1 }}
                   exit={{ opacity: 0, y: 10, scale: 0.95 }}
@@ -84,28 +141,28 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
                     <p className="text-[10px] font-black text-gray-400 uppercase tracking-widest mb-1">Signed in as</p>
                     <p className="text-sm font-bold text-[#0F172A] truncate">{user?.email}</p>
                   </div>
-                  
+
                   <div className="space-y-1">
                     {user?.role === "worker" ? (
-                      <Link 
-                        href="/worker" 
+                      <Link
+                        href="/worker"
                         className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 hover:text-[#0F172A] rounded-xl transition-all"
                         onClick={() => setIsDropdownOpen(false)}
                       >
                         <Briefcase size={16} className="text-teal-500" /> Worker Dashboard
                       </Link>
                     ) : (
-                      <Link 
-                        href="/my-bookings" 
+                      <Link
+                        href="/my-bookings"
                         className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 hover:text-[#0F172A] rounded-xl transition-all"
                         onClick={() => setIsDropdownOpen(false)}
                       >
                         <Clock size={16} className="text-teal-500" /> My Bookings
                       </Link>
                     )}
-                    
-                    <Link 
-                      href="#" 
+
+                    <Link
+                      href="#"
                       className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 hover:text-[#0F172A] rounded-xl transition-all"
                       onClick={() => setIsDropdownOpen(false)}
                     >
@@ -114,7 +171,7 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
                   </div>
 
                   <div className="mt-2 pt-2 border-t border-gray-50">
-                    <button 
+                    <button
                       onClick={handleLogout}
                       className="w-full flex items-center gap-3 px-4 py-3 text-xs font-bold text-rose-500 hover:bg-rose-50 rounded-xl transition-all"
                     >
