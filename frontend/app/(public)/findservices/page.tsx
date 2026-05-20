@@ -1,10 +1,10 @@
 import React from "react";
-import { 
-  ShieldCheck, 
-  TrendingUp, 
-  MessageSquare, 
-  Zap, 
-  UserCircle 
+import {
+  ShieldCheck,
+  TrendingUp,
+  MessageSquare,
+  Zap,
+  UserCircle
 } from "lucide-react";
 import Link from "next/link";
 import { workerApi, WorkerPublic } from "@/services/api";
@@ -23,7 +23,7 @@ interface PageProps {
 
 export default async function FindServicePage({ searchParams }: PageProps) {
   const params = await searchParams;
-  
+
   const fetchParams: any = { isAvailable: "true" };
   if (params.category && params.category !== "All") fetchParams.category = params.category;
   if (params.search) fetchParams.search = params.search;
@@ -47,10 +47,10 @@ export default async function FindServicePage({ searchParams }: PageProps) {
     <div className="min-h-screen bg-white font-sans text-[#0F172A] selection:bg-teal-100 selection:text-teal-900">
 
 
-      <div className="flex pt-16 max-w-[1600px] mx-auto min-h-screen">
+      <div className="flex max-w-[1600px] mx-auto min-h-screen">
         <FilterSidebar />
 
-        <main className="flex-1 p-6 md:p-10 lg:px-12 bg-gray-50/30">
+        <main className="flex-1 md:p-10 lg:px-12 bg-gray-50/30">
           <SearchHeader totalWorkers={totalWorkers} />
 
           {error && (
@@ -60,10 +60,10 @@ export default async function FindServicePage({ searchParams }: PageProps) {
           )}
 
           {!error && (
-            <WorkerList 
-              initialWorkers={workers} 
-              initialPages={totalPages} 
-              params={fetchParams} 
+            <WorkerList
+              initialWorkers={workers}
+              initialPages={totalPages}
+              params={fetchParams}
             />
           )}
         </main>

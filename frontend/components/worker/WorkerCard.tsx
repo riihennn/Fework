@@ -29,7 +29,7 @@ export default function WorkerCard({ worker }: { worker: WorkerPublic }) {
               />
             ) : (
               <span className="text-4xl font-black text-gray-300">
-                {worker.user.name?.[0]?.toUpperCase() ?? "?"}
+                d
               </span>
             )}
           </div>
@@ -87,7 +87,7 @@ export default function WorkerCard({ worker }: { worker: WorkerPublic }) {
           <div className="flex flex-col items-center md:items-start border-l border-gray-100 pl-8">
             <span className="text-base font-extrabold text-[#0F172A]">{worker.experience || "0"} Yrs</span>
             <span className="text-[9px] text-gray-400 font-black uppercase tracking-widest">Experience</span>
-            
+
           </div>
 
           {/* Hourly Rate */}
@@ -95,7 +95,7 @@ export default function WorkerCard({ worker }: { worker: WorkerPublic }) {
             <span className="text-base font-extrabold text-[#0F172A]">₹ {worker.hourlyRate || "0"}</span>
             <span className="text-[9px] text-gray-400 font-black uppercase tracking-widest">Per Hour</span>
           </div>
-      </div>
+        </div>
       </div>
 
       {/* Right side: Actions */}

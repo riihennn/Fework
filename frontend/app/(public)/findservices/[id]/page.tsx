@@ -1,12 +1,12 @@
 import React from "react";
-import { 
-  Star, 
-  MapPin, 
-  CheckCircle2, 
-  ArrowLeft, 
-  Clock, 
-  Briefcase, 
-  ShieldCheck 
+import {
+  Star,
+  MapPin,
+  CheckCircle2,
+  ArrowLeft,
+  Clock,
+  Briefcase,
+  ShieldCheck
 } from "lucide-react";
 import Link from "next/link";
 import { workerApi } from "@/services/api";
@@ -58,7 +58,7 @@ interface PageProps {
 
 export default async function WorkerProfilePage({ params }: PageProps) {
   const { id } = await params;
-  
+
   let worker = null;
   let error = null;
 
@@ -186,10 +186,10 @@ export default async function WorkerProfilePage({ params }: PageProps) {
                 <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest mb-5">Details</h2>
                 <div className="space-y-4">
                   {[
-                    { icon: Briefcase, label: "Category",    value: worker.category },
-                    { icon: Clock,     label: "Experience",  value: worker.experience ? `${worker.experience} years` : "—" },
-                    { icon: MapPin,    label: "Location",    value: `${worker.city}${worker.state ? `, ${worker.state}` : ""}` },
-                    { icon: Star,      label: "Rating",      value: avgRating ? `${avgRating} / 5.0` : "New professional" },
+                    { icon: Briefcase, label: "Category", value: worker.category },
+                    { icon: Clock, label: "Experience", value: worker.experience ? `${worker.experience} years` : "—" },
+                    { icon: MapPin, label: "Location", value: `${worker.city}${worker.state ? `, ${worker.state}` : ""}` },
+                    { icon: Star, label: "Rating", value: avgRating ? `${avgRating} / 5.0` : "New professional" },
                   ].map(({ icon: Icon, label, value }) => (
                     <div key={label} className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-xl bg-teal-50 flex items-center justify-center shrink-0">
