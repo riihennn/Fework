@@ -93,8 +93,8 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
     );
   };
 
-  const canProceed = service.length > 0 && description.trim().length >= 10 && location.trim().length > 0;
-  const canBook    = selDay !== null && selWindow !== null;
+  const canProceed = selDay !== null && selWindow !== null;
+  const canBook    = canProceed && description.trim().length >= 10 && location.trim().length > 0;
   const selectedWindow = TIME_WINDOWS.find(w => w.id === selWindow);
 
   const handleBooking = async () => {
@@ -160,109 +160,12 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
 
             <AnimatePresence mode="wait">
 
-              {/* ── STEP 1 ─────────────────────────────────────────── */}
+              {/* ── STEP 1: Choose Date & Time ── */}
               {step === 1 && (
                 <motion.div key="step1"
                   initial={{ opacity: 0, x: -12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: -12 }}
-                  className="space-y-5"
-                >
-                  {/* Description — compulsory */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
-                        Describe the Work <span className="text-rose-400">*</span>
-                      </label>
-                      <span className={`text-[9px] font-black tabular-nums ${description.trim().length >= 10 ? "text-teal-500" : "text-rose-400"}`}>
-                        {description.length} / 10 min
-                      </span>
-                    </div>
-                    <textarea
-                      value={description}
-                      onChange={e => setDescription(e.target.value)}
-                      rows={4}
-                      placeholder="Clearly describe what needs to be done. The worker uses this to prepare. e.g. 'Two bedroom walls need repainting in white — about 400 sq ft. Ceiling is fine.'"
-                      className="w-full px-4 py-3 rounded-2xl border border-gray-100 text-sm font-medium text-[#0F172A] placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-300 transition-all resize-none leading-relaxed"
-                    />
-                    {description.length > 0 && description.trim().length < 10 && (
-                      <p className="text-[10px] text-rose-400 font-bold mt-1">Please describe the work in more detail</p>
-                    )}
-                  </div>
-
-                  {/* Location */}
-                  <div>
-                    <div className="flex items-center justify-between mb-2">
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Your Location</label>
-                      <button type="button" onClick={handleUseMyLocation} disabled={gpsLoading}
-                        className="flex items-center gap-1 text-[10px] font-black text-teal-600 hover:text-teal-700 uppercase tracking-wider disabled:opacity-50 transition-colors">
-                        {gpsLoading ? <Loader2 size={11} className="animate-spin" /> : <Navigation size={11} />}
-                        {gpsLoading ? "Detecting…" : "Use My Location"}
-                      </button>
-                    </div>
-                    <div className="relative">
-                      <MapPin size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-teal-400" />
-                      <input
-                        value={location}
-                        onChange={e => setLocation(e.target.value)}
-                        placeholder="Street, Area, City"
-                        className="w-full pl-10 pr-4 py-3 rounded-2xl border border-gray-100 text-sm font-bold text-[#0F172A] placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-300 transition-all"
-                      />
-                    </div>
-                    {user?.city && location === user.city && (
-                      <p className="text-[10px] text-teal-500 font-bold mt-1.5 flex items-center gap-1">
-                        <CheckCircle2 size={10} /> Using your registered city
-                      </p>
-                    )}
-                  </div>
-
-                  {/* Urgent toggle */}
-                  <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => setIsUrgent(u => !u)}>
-                    <div className={`w-10 h-5 rounded-full flex items-center px-0.5 transition-all ${isUrgent ? "bg-rose-500" : "bg-gray-200"}`}>
-                      <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${isUrgent ? "translate-x-5" : "translate-x-0"}`} />
-                    </div>
-                    <div>
-                      <p className="text-[11px] font-black text-[#0F172A] uppercase tracking-widest flex items-center gap-1.5">
-                        <Zap size={11} className="text-rose-500" /> Urgent Request
-                      </p>
-                      <p className="text-[10px] text-gray-400 font-bold">Priority handling — may incur additional fee</p>
-                    </div>
-                  </div>
-
-                  <button onClick={() => setStep(2)} disabled={!canProceed}
-                    className={`w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all ${
-                      canProceed
-                        ? "bg-[#0F172A] text-white hover:bg-gray-800 shadow-xl shadow-gray-200"
-                        : "bg-gray-100 text-gray-300 cursor-not-allowed"
-                    }`}>
-                    Choose Date &amp; Time →
-                  </button>
-                </motion.div>
-              )}
-
-              {/* ── STEP 2 ─────────────────────────────────────────── */}
-              {step === 2 && (
-                <motion.div key="step2"
-                  initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
                   className="space-y-4"
                 >
-                  <button onClick={() => setStep(1)}
-                    className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-[#0F172A] transition-colors mb-2">
-                    <ChevronLeft size={12} /> Back to Details
-                  </button>
-
-                  {/* Job summary strip */}
-                  <div className="bg-gray-50 rounded-2xl px-4 py-3 flex items-center gap-3">
-                    <FileText size={14} className="text-teal-500 shrink-0" />
-                    <div className="min-w-0 flex-1">
-                      <div className="text-[11px] font-black text-[#0F172A] uppercase tracking-wide capitalize">{service}</div>
-                      <div className="text-[10px] text-gray-400 font-bold truncate flex items-center gap-1">
-                        <MapPin size={9} className="text-teal-400" />{location}
-                      </div>
-                    </div>
-                    {isUrgent && (
-                      <span className="shrink-0 px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 text-[9px] font-black border border-rose-100">Urgent</span>
-                    )}
-                  </div>
-
                   {/* Calendar */}
                   <div className="flex items-center justify-between">
                     <span className="text-sm font-black text-[#0F172A]">{MONTHS[calMonth]} {calYear}</span>
@@ -327,18 +230,104 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
                     </div>
                   )}
 
-                  {/* Selected summary */}
-                  {canBook && selectedWindow && (
-                    <motion.div initial={{ opacity: 0, y: 4 }} animate={{ opacity: 1, y: 0 }}
-                      className="px-4 py-3 bg-teal-50 border border-teal-100 rounded-2xl flex items-center justify-between">
-                      <div>
-                        <div className="text-[9px] font-black text-teal-500 uppercase tracking-widest">Your Preference</div>
-                        <div className="text-sm font-black text-[#0F172A]">{MONTHS[calMonth]} {selDay} · {selectedWindow.label}</div>
-                        <div className="text-[10px] text-teal-500 font-bold">{selectedWindow.range}</div>
+                  <button onClick={() => setStep(2)} disabled={!canProceed}
+                    className={`w-full py-4 rounded-2xl font-black text-[11px] uppercase tracking-widest transition-all ${
+                      canProceed
+                        ? "bg-[#0F172A] text-white hover:bg-gray-800 shadow-xl shadow-gray-200"
+                        : "bg-gray-100 text-gray-300 cursor-not-allowed"
+                    }`}>
+                    Describe Job &amp; Location →
+                  </button>
+                </motion.div>
+              )}
+
+              {/* ── STEP 2: Job & Location Details ── */}
+              {step === 2 && (
+                <motion.div key="step2"
+                  initial={{ opacity: 0, x: 12 }} animate={{ opacity: 1, x: 0 }} exit={{ opacity: 0, x: 12 }}
+                  className="space-y-5"
+                >
+                  <button onClick={() => setStep(1)}
+                    className="flex items-center gap-1.5 text-[10px] font-black text-gray-400 uppercase tracking-widest hover:text-[#0F172A] transition-colors mb-2">
+                    <ChevronLeft size={12} /> Back to Date &amp; Time
+                  </button>
+
+                  {/* Job summary strip (Chosen Date & Time) */}
+                  {selectedWindow && selDay && (
+                    <div className="bg-gray-50 rounded-2xl px-4 py-3 flex items-center gap-3">
+                      <Clock size={14} className="text-teal-500 shrink-0" />
+                      <div className="min-w-0 flex-1">
+                        <div className="text-[11px] font-black text-[#0F172A] uppercase tracking-wide">Selected Time</div>
+                        <div className="text-[10px] text-gray-400 font-bold truncate">
+                          {MONTHS[calMonth]} {selDay}, {calYear} · {selectedWindow.label} ({selectedWindow.range})
+                        </div>
                       </div>
-                      <Clock size={18} className="text-teal-400" />
-                    </motion.div>
+                      {isUrgent && (
+                        <span className="shrink-0 px-2 py-0.5 rounded-full bg-rose-50 text-rose-600 text-[9px] font-black border border-rose-100">Urgent</span>
+                      )}
+                    </div>
                   )}
+
+                  {/* Description — compulsory */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">
+                        Describe the Work <span className="text-rose-400">*</span>
+                      </label>
+                      <span className={`text-[9px] font-black tabular-nums ${description.trim().length >= 10 ? "text-teal-500" : "text-rose-400"}`}>
+                        {description.length} / 10 min
+                      </span>
+                    </div>
+                    <textarea
+                      value={description}
+                      onChange={e => setDescription(e.target.value)}
+                      rows={4}
+                      placeholder="Clearly describe what needs to be done. The worker uses this to prepare."
+                      className="w-full px-4 py-3 rounded-2xl border border-gray-300 text-sm font-medium text-[#0F172A] placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-300 transition-all resize-none leading-relaxed"
+                    />
+                    {description.length > 0 && description.trim().length < 10 && (
+                      <p className="text-[10px] text-rose-400  mt-1">Please describe the work in more detail</p>
+                    )}
+                  </div>
+
+                  {/* Location */}
+                  <div>
+                    <div className="flex items-center justify-between mb-2">
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Your Location</label>
+                      <button type="button" onClick={handleUseMyLocation} disabled={gpsLoading}
+                        className="flex items-center gap-1 text-[10px] font-black text-teal-600 hover:text-teal-700 uppercase tracking-wider disabled:opacity-50 transition-colors">
+                        {gpsLoading ? <Loader2 size={11} className="animate-spin" /> : <Navigation size={11} />}
+                        {gpsLoading ? "Detecting…" : "Use My Location"}
+                      </button>
+                    </div>
+                    <div className="relative">
+                      <MapPin size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-teal-400" />
+                      <input
+                        value={location}
+                        onChange={e => setLocation(e.target.value)}
+                        placeholder="Street, Area, City"
+                        className="w-full pl-10 pr-4 py-3 rounded-2xl border border-gray-300 text-sm font-bold text-[#0F172A] placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-300 transition-all"
+                      />
+                    </div>
+                    {user?.city && location === user.city && (
+                      <p className="text-[10px] text-teal-500 font-bold mt-1.5 flex items-center gap-1">
+                        <CheckCircle2 size={10} /> Using your registered city
+                      </p>
+                    )}
+                  </div>
+
+                  {/* Urgent toggle */}
+                  <div className="flex items-center gap-3 cursor-pointer select-none" onClick={() => setIsUrgent(u => !u)}>
+                    <div className={`w-10 h-5 rounded-full flex items-center px-0.5 transition-all ${isUrgent ? "bg-rose-500" : "bg-gray-200"}`}>
+                      <div className={`w-4 h-4 bg-white rounded-full shadow transition-transform ${isUrgent ? "translate-x-5" : "translate-x-0"}`} />
+                    </div>
+                    <div>
+                      <p className="text-[11px] font-black text-[#0F172A] uppercase tracking-widest flex items-center gap-1.5">
+                        <Zap size={11} className="text-rose-500" /> Urgent Request
+                      </p>
+                      <p className="text-[10px] text-gray-400 font-bold">Priority handling — may incur additional fee</p>
+                    </div>
+                  </div>
 
                   {/* Pay */}
                   <div className="flex items-center justify-between px-4 py-3 bg-gray-50 rounded-2xl">

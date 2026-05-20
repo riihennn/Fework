@@ -2,7 +2,7 @@ import { NextResponse } from "next/server";
 import type { NextRequest } from "next/server";
 
 /**
- * FEWORK ROUTE GUARD
+ * FEWORK ROUTE GUARD (NEXT.JS 16 PROXY CONVENTION)
  *
  * Four user types with completely separate territories:
  *
@@ -34,7 +34,7 @@ const WORKER_ALLOWED = ["/worker"];
 // Routes guests are allowed to visit without a token
 const GUEST_ALLOWED = ["/", "/findservices", "/login", "/signup"];
 
-export function middleware(request: NextRequest) {
+export function proxy(request: NextRequest) {
   const token = request.cookies.get("token")?.value;
   const userRole = request.cookies.get("user_role")?.value;
   const { pathname } = request.nextUrl;

@@ -93,7 +93,7 @@ export default async function WorkerProfilePage({ params }: PageProps) {
     <div className="min-h-screen bg-[#f8f9fb] font-sans text-[#0F172A] selection:bg-teal-100">
 
 
-      <div className="max-w-[1200px] mx-auto pt-24 pb-20 px-4 md:px-8">
+      <div className="max-w-[1200px] mx-auto pt-5 pb-20 px-4 md:px-8">
         <Link
           href="/findservices"
           className="flex items-center gap-2 text-gray-400 hover:text-[#0F172A] transition-colors font-bold text-sm mb-8 group"
