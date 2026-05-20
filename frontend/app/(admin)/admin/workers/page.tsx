@@ -122,9 +122,8 @@ export default function AdminWorkersPage() {
 
               {/* Badges & Meta */}
               <div className="flex items-center gap-2 mb-6">
-                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${
-                  w.isAvailable ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-gray-100 text-gray-500 border border-gray-200'
-                }`}>
+                <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${w.isAvailable ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-gray-100 text-gray-500 border border-gray-200'
+                  }`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${w.isAvailable ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
                   {w.isAvailable ? 'Online' : 'Offline'}
                 </div>
@@ -142,11 +141,10 @@ export default function AdminWorkersPage() {
                 <button
                   onClick={() => handleToggleElite(w._id)}
                   disabled={togglingId === w._id}
-                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${
-                    w.isElite
+                  className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${w.isElite
                       ? "bg-rose-50 text-rose-600 hover:bg-rose-100"
                       : "bg-[#0A1128] text-white hover:bg-gray-800 shadow-md"
-                  }`}
+                    }`}
                 >
                   {togglingId === w._id ? "..." : w.isElite ? "Revoke Elite" : "Make Elite"}
                 </button>

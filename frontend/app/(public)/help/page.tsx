@@ -2,6 +2,7 @@
 
 import React, { useState } from "react";
 import { motion, AnimatePresence } from "framer-motion";
+import { raiseTicket } from "@/utils/ticketStorage";
 import {
   Search, BookOpen, CreditCard, Calendar, Shield,
   Briefcase, Users, ChevronDown, MessageCircle, Mail,
@@ -96,6 +97,38 @@ function AccordionItem({ faq, index }: { faq: any; index: number }) {
 }
 
 export default function HelpCenterPage() {
+  const [isTicketModalOpen, setIsTicketModalOpen] = useState(false);
+  const [ticketSuccess, setTicketSuccess] = useState<string | null>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    role: "client" as "client" | "worker",
+    category: "payment" as any,
+    priority: "medium" as any,
+    subject: "",
+    description: ""
+  });
+
+  const handleSubmitTicket = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (!formData.name || !formData.email || !formData.subject || !formData.description) {
+      alert("Please fill out all fields.");
+      return;
+    }
+    const newTkt = raiseTicket(formData);
+    setTicketSuccess(newTkt.id);
+    // Reset form data
+    setFormData({
+      name: "",
+      email: "",
+      role: "client",
+      category: "payment",
+      priority: "medium",
+      subject: "",
+      description: ""
+    });
+  };
+
   return (
     <div className="min-h-screen bg-white selection:bg-teal-100">
       
@@ -189,6 +222,7 @@ export default function HelpCenterPage() {
                   </div>
                   <button className="ml-auto text-xs font-black text-teal-600">START CHAT</button>
                 </div>
+                
                 <div className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
                   <div className="w-10 h-10 bg-blue-50 text-blue-600 rounded-xl flex items-center justify-center">
                     <Mail size={20} />
@@ -198,6 +232,17 @@ export default function HelpCenterPage() {
                     <p className="text-sm font-bold text-[#0F172A]">support@fework.com</p>
                   </div>
                   <button className="ml-auto text-xs font-black text-blue-600">SEND MAIL</button>
+                </div>
+
+                <div className="flex items-center gap-4 p-4 bg-white border border-gray-100 rounded-2xl shadow-sm">
+                  <div className="w-10 h-10 bg-rose-50 text-rose-600 rounded-xl flex items-center justify-center">
+                    <LifeBuoy size={20} />
+                  </div>
+                  <div>
+                    <p className="text-xs font-black text-gray-400 uppercase tracking-widest mb-0.5">Support Ticket</p>
+                    <p className="text-sm font-bold text-[#0F172A]">File a formal complaint</p>
+                  </div>
+                  <button onClick={() => { setIsTicketModalOpen(true); setTicketSuccess(null); }} className="ml-auto text-xs font-black text-rose-600">RAISE TICKET</button>
                 </div>
               </div>
             </div>
@@ -228,7 +273,7 @@ export default function HelpCenterPage() {
       <footer className="py-20 border-t border-gray-50">
         <div className="max-w-7xl mx-auto px-6 text-center">
           <div className="flex items-center justify-center gap-2 mb-6">
-            <p  className="text-2xl font-bold text-[#0F172A] tracking-tight flex items-center gap-0.5">
+            <p className="text-2xl font-bold text-[#0F172A] tracking-tight flex items-center gap-0.5">
               Fework<span className="w-1.5 h-1.5 rounded-full bg-teal-600 mt-2" />
             </p>
           </div>
@@ -244,6 +289,186 @@ export default function HelpCenterPage() {
         </div>
       </footer>
 
+      {/* ─── Ticket Submission Modal ─── */}
+      <AnimatePresence>
+        {isTicketModalOpen && (
+          <div className="fixed inset-0 z-50 flex items-center justify-center p-4">
+            <motion.div 
+              initial={{ opacity: 0 }}
+              animate={{ opacity: 1 }}
+              exit={{ opacity: 0 }}
+              className="absolute inset-0 bg-slate-900/40 backdrop-blur-sm" 
+              onClick={() => setIsTicketModalOpen(false)} 
+            />
+            <motion.div 
+              initial={{ opacity: 0, scale: 0.95, y: 15 }}
+              animate={{ opacity: 1, scale: 1, y: 0 }}
+              exit={{ opacity: 0, scale: 0.95, y: 15 }}
+              className="relative bg-white rounded-[32px] p-8 max-w-xl w-full shadow-2xl overflow-y-auto max-h-[90vh] no-scrollbar border border-slate-100"
+            >
+              <div className="flex justify-between items-start mb-6">
+                <div>
+                  <h3 className="text-2xl font-bold text-[#0F172A]">File a Ticket</h3>
+                  <p className="text-xs font-bold text-gray-400 mt-1 uppercase tracking-widest">Submit a support request or complaint</p>
+                </div>
+                <button 
+                  onClick={() => setIsTicketModalOpen(false)} 
+                  className="p-2 bg-gray-50 text-gray-400 hover:text-gray-600 rounded-full transition-colors"
+                >
+                  <ChevronDown size={20} className="rotate-90" />
+                </button>
+              </div>
+
+              {ticketSuccess ? (
+                <div className="text-center py-8">
+                  <div className="w-16 h-16 bg-teal-50 border border-teal-100 text-teal-500 rounded-3xl flex items-center justify-center mx-auto mb-6 shadow-inner">
+                    <CheckCircle2 size={36} />
+                  </div>
+                  <h4 className="text-xl font-bold text-[#0F172A] mb-2">Ticket Submitted!</h4>
+                  <p className="text-sm text-gray-400 mb-6 max-w-sm mx-auto">
+                    Your complaint has been successfully logged. The admin team will review it shortly.
+                  </p>
+                  <div className="inline-block bg-teal-50/50 border border-teal-100 px-4 py-2.5 rounded-2xl text-xs font-black text-teal-700 tracking-wider mb-8 uppercase">
+                    Ticket ID: {ticketSuccess}
+                  </div>
+                  <button
+                    onClick={() => setIsTicketModalOpen(false)}
+                    className="w-full h-14 rounded-2xl font-bold text-white bg-[#0F172A] hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/10"
+                  >
+                    Close Support Portal
+                  </button>
+                </div>
+              ) : (
+                <form onSubmit={handleSubmitTicket} className="space-y-5">
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Your Name</label>
+                      <input
+                        type="text"
+                        required
+                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm text-[#0F172A] focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 outline-none transition-all"
+                        placeholder="John Doe"
+                        value={formData.name}
+                        onChange={(e) => setFormData(prev => ({ ...prev, name: e.target.value }))}
+                      />
+                    </div>
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Email Address</label>
+                      <input
+                        type="email"
+                        required
+                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm text-[#0F172A] focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 outline-none transition-all"
+                        placeholder="john@example.com"
+                        value={formData.email}
+                        onChange={(e) => setFormData(prev => ({ ...prev, email: e.target.value }))}
+                      />
+                    </div>
+                  </div>
+
+                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Platform Role</label>
+                      <div className="grid grid-cols-2 gap-2 bg-slate-50 border border-slate-100 rounded-2xl p-1">
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, role: "client" }))}
+                          className={`py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${
+                            formData.role === "client" ? "bg-white text-teal-600 shadow-sm" : "text-gray-400 hover:text-[#0F172A]"
+                          }`}
+                        >
+                          Client
+                        </button>
+                        <button
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, role: "worker" }))}
+                          className={`py-2 rounded-xl text-xs font-bold transition-all uppercase tracking-wider ${
+                            formData.role === "worker" ? "bg-white text-teal-600 shadow-sm" : "text-gray-400 hover:text-[#0F172A]"
+                          }`}
+                        >
+                          Worker
+                        </button>
+                      </div>
+                    </div>
+
+                    <div>
+                      <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Issue Category</label>
+                      <select
+                        className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm text-[#0F172A] outline-none focus:bg-white focus:border-teal-500 transition-all cursor-pointer"
+                        value={formData.category}
+                        onChange={(e) => setFormData(prev => ({ ...prev, category: e.target.value as any }))}
+                      >
+                        <option value="payment">Payment & Refunds</option>
+                        <option value="scheduling">Bookings & Delays</option>
+                        <option value="quality">Quality of Work</option>
+                        <option value="safety">Safety & Misbehavior</option>
+                        <option value="technical">App Bug & Technical</option>
+                        <option value="other">Other Issues</option>
+                      </select>
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Priority Level</label>
+                    <div className="flex gap-2">
+                      {["low", "medium", "high", "urgent"].map((lvl) => (
+                        <button
+                          key={lvl}
+                          type="button"
+                          onClick={() => setFormData(prev => ({ ...prev, priority: lvl }))}
+                          className={`flex-1 py-2.5 rounded-xl text-xs font-bold transition-all uppercase tracking-widest border ${
+                            formData.priority === lvl
+                              ? lvl === "urgent"
+                                ? "bg-red-50 text-red-600 border-red-200"
+                                : lvl === "high"
+                                ? "bg-amber-50 text-amber-600 border-amber-200"
+                                : lvl === "medium"
+                                ? "bg-blue-50 text-blue-600 border-blue-200"
+                                : "bg-slate-50 text-slate-600 border-slate-200"
+                              : "bg-white text-gray-400 border-slate-100 hover:bg-slate-50/50"
+                          }`}
+                        >
+                          {lvl}
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Subject</label>
+                    <input
+                      type="text"
+                      required
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm text-[#0F172A] focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 outline-none transition-all"
+                      placeholder="Briefly state the issue..."
+                      value={formData.subject}
+                      onChange={(e) => setFormData(prev => ({ ...prev, subject: e.target.value }))}
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-[10px] font-black text-gray-400 uppercase tracking-widest mb-2">Detailed Description</label>
+                    <textarea
+                      required
+                      rows={4}
+                      className="w-full bg-slate-50 border border-slate-100 rounded-2xl px-4 py-3 text-sm text-[#0F172A] focus:bg-white focus:border-teal-500 focus:ring-4 focus:ring-teal-500/10 outline-none transition-all resize-none"
+                      placeholder="Please explain the details of your issue so we can investigate..."
+                      value={formData.description}
+                      onChange={(e) => setFormData(prev => ({ ...prev, description: e.target.value }))}
+                    />
+                  </div>
+
+                  <button
+                    type="submit"
+                    className="w-full h-14 rounded-2xl font-bold text-white bg-[#0F172A] hover:bg-slate-800 transition-colors shadow-lg shadow-slate-900/10 mt-2"
+                  >
+                    Submit Support Ticket
+                  </button>
+                </form>
+              )}
+            </motion.div>
+          </div>
+        )}
+      </AnimatePresence>
     </div>
   );
 }

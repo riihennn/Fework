@@ -7,13 +7,13 @@ import { Calendar, MapPin, Clock, Edit3, X, Zap } from "lucide-react";
 const STATUSES = ["all", "pending", "accepted", "in_progress", "awaiting_approval", "completed", "disputed", "cancelled"];
 
 const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string }> = {
-  pending:            { bg: "bg-amber-50",    text: "text-amber-700",   dot: "bg-amber-500" },
-  accepted:           { bg: "bg-indigo-50",   text: "text-indigo-700",  dot: "bg-indigo-500" },
-  in_progress:        { bg: "bg-blue-50",     text: "text-blue-700",    dot: "bg-blue-500" },
-  awaiting_approval:  { bg: "bg-purple-50",   text: "text-purple-700",  dot: "bg-purple-500" },
-  completed:          { bg: "bg-green-50",    text: "text-green-700",   dot: "bg-green-500" },
-  disputed:           { bg: "bg-rose-50",     text: "text-rose-700",    dot: "bg-rose-500" },
-  cancelled:          { bg: "bg-slate-100",   text: "text-slate-700",   dot: "bg-slate-500" },
+  pending: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500" },
+  accepted: { bg: "bg-indigo-50", text: "text-indigo-700", dot: "bg-indigo-500" },
+  in_progress: { bg: "bg-blue-50", text: "text-blue-700", dot: "bg-blue-500" },
+  awaiting_approval: { bg: "bg-purple-50", text: "text-purple-700", dot: "bg-purple-500" },
+  completed: { bg: "bg-green-50", text: "text-green-700", dot: "bg-green-500" },
+  disputed: { bg: "bg-rose-50", text: "text-rose-700", dot: "bg-rose-500" },
+  cancelled: { bg: "bg-slate-100", text: "text-slate-700", dot: "bg-slate-500" },
 };
 
 export default function AdminBookingsPage() {
@@ -77,11 +77,10 @@ export default function AdminBookingsPage() {
             <button
               key={s}
               onClick={() => { setStatus(s); setPage(1); }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all border ${
-                isActive
+              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all border ${isActive
                   ? `${style.bg} ${style.text} border-transparent shadow-sm ring-1 ring-inset ring-${style.dot.replace('bg-', '')}/20`
                   : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
-              }`}
+                }`}
             >
               {s !== "all" && <span className={`w-2 h-2 rounded-full ${style.dot}`} />}
               {s.replace(/_/g, " ")}
@@ -217,7 +216,7 @@ export default function AdminBookingsPage() {
                 <X size={20} />
               </button>
             </div>
-            
+
             <div className="p-4 bg-gray-50 rounded-2xl border border-gray-100 mb-6">
               <div className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-1">Current Info</div>
               <div className="text-sm font-semibold text-[#0F172A]">Client: {editing.client?.name}</div>

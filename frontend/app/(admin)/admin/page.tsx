@@ -2,16 +2,16 @@
 
 import { useEffect, useState } from "react";
 import { adminApi, AdminStats } from "@/services/api";
-import { 
-  Users, 
-  HardHat, 
-  ClipboardList, 
-  Wallet, 
-  Hourglass, 
-  AlertOctagon, 
-  Ban, 
-  CheckCircle, 
-  TrendingUp, 
+import {
+  Users,
+  HardHat,
+  ClipboardList,
+  Wallet,
+  Hourglass,
+  AlertOctagon,
+  Ban,
+  CheckCircle,
+  TrendingUp,
   UserCheck
 } from "lucide-react";
 import { motion } from "framer-motion";
@@ -96,13 +96,13 @@ export default function AdminOverviewPage() {
   );
 
   const o = stats!.overview;
-  
+
   // Calculate total revenue from trend data for the header
   const weekRevenue = stats!.trendData?.reduce((sum, item) => sum + item.revenue, 0) || 0;
 
   return (
     <motion.div variants={containerVars} initial="hidden" animate="show" className="space-y-6 max-w-7xl mx-auto">
-      
+
       {/* Primary Stats */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <StatCard label="Total Users" value={o.totalUsers.toLocaleString()} sub={`${o.newUsersThisMonth} this month`} colorClass="bg-indigo-500" icon={Users} isPrimary />
@@ -135,8 +135,8 @@ export default function AdminOverviewPage() {
                 </defs>
                 <CartesianGrid strokeDasharray="3 3" vertical={false} stroke="#f1f5f9" />
                 <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#94a3b8", fontWeight: 700 }} dy={10} />
-                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#94a3b8", fontWeight: 700 }} tickFormatter={(val) => `₹${val/1000}k`} />
-                <Tooltip 
+                <YAxis axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#94a3b8", fontWeight: 700 }} tickFormatter={(val) => `₹${val / 1000}k`} />
+                <Tooltip
                   contentStyle={{ borderRadius: '16px', border: 'none', boxShadow: '0 10px 25px -5px rgba(0, 0, 0, 0.1), 0 8px 10px -6px rgba(0, 0, 0, 0.1)', fontWeight: 'bold' }}
                   itemStyle={{ color: '#0F172A' }}
                   formatter={(val: any) => [`₹${Number(val).toLocaleString()}`, 'Revenue']}
@@ -162,7 +162,7 @@ export default function AdminOverviewPage() {
                 <BarChart data={stats!.trendData} margin={{ top: 0, right: 0, left: -25, bottom: 0 }}>
                   <XAxis dataKey="name" axisLine={false} tickLine={false} tick={{ fontSize: 12, fill: "#64748b", fontWeight: 700 }} dy={10} />
                   <YAxis axisLine={false} tickLine={false} tick={false} />
-                  <Tooltip 
+                  <Tooltip
                     cursor={{ fill: 'rgba(255,255,255,0.05)' }}
                     contentStyle={{ backgroundColor: '#0f172a', borderRadius: '12px', border: '1px solid #1e293b', color: 'white', fontWeight: 'bold' }}
                     itemStyle={{ color: '#a5b4fc' }}
@@ -216,7 +216,7 @@ export default function AdminOverviewPage() {
                     <span className="text-sm font-black text-[#0F172A]">{s.count} <span className="text-[10px] text-gray-400 font-bold uppercase ml-1">({pct}%)</span></span>
                   </div>
                   <div className="h-2.5 bg-gray-50 rounded-full overflow-hidden border border-gray-100/50">
-                    <motion.div 
+                    <motion.div
                       initial={{ width: 0 }}
                       animate={{ width: `${pct}%` }}
                       transition={{ duration: 1, delay: 0.2, ease: "easeOut" }}
@@ -238,11 +238,11 @@ export default function AdminOverviewPage() {
           </div>
           <div className="space-y-3">
             {stats!.recentUsers.map((u, i) => (
-              <motion.div 
+              <motion.div
                 initial={{ opacity: 0, x: -10 }}
                 animate={{ opacity: 1, x: 0 }}
                 transition={{ delay: 0.3 + (i * 0.1) }}
-                key={u._id} 
+                key={u._id}
                 className="flex items-center gap-4 p-3 rounded-2xl border border-transparent hover:border-gray-100 hover:bg-gray-50/50 transition-all group cursor-pointer"
               >
                 <div className="w-12 h-12 rounded-[14px] bg-gray-50 border border-gray-100 flex items-center justify-center text-[#0F172A] font-black text-lg group-hover:scale-105 transition-transform">
@@ -252,9 +252,8 @@ export default function AdminOverviewPage() {
                   <div className="text-sm font-bold text-[#0F172A] truncate group-hover:text-teal-600 transition-colors">{u.name}</div>
                   <div className="text-xs text-gray-400 truncate mt-0.5">{u.email}</div>
                 </div>
-                <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border ${
-                  u.role === 'client' ? 'bg-cyan-50 text-cyan-600 border-cyan-100' : 'bg-purple-50 text-purple-600 border-purple-100'
-                }`}>
+                <span className={`text-[9px] font-black uppercase tracking-widest px-2.5 py-1 rounded-lg border ${u.role === 'client' ? 'bg-cyan-50 text-cyan-600 border-cyan-100' : 'bg-purple-50 text-purple-600 border-purple-100'
+                  }`}>
                   {u.role}
                 </span>
               </motion.div>

@@ -4,13 +4,14 @@ import React, { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import Link from "next/link";
-import { LayoutDashboard, Users, Briefcase, Calendar, LogOut, Menu } from "lucide-react";
+import { LayoutDashboard, Users, Briefcase, Calendar, LogOut, Menu, LifeBuoy } from "lucide-react";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
   { href: "/admin/users", label: "Users", icon: Users },
   { href: "/admin/workers", label: "Workers", icon: Briefcase },
   { href: "/admin/bookings", label: "Bookings", icon: Calendar },
+  { href: "/admin/tickets", label: "Tickets", icon: LifeBuoy },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {
@@ -39,9 +40,8 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
       {/* ── Sidebar ── */}
       <aside
-        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-100 flex flex-col transition-transform duration-300 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full"
-        } lg:translate-x-0`}
+        className={`fixed inset-y-0 left-0 z-50 w-72 bg-white border-r border-gray-100 flex flex-col transition-transform duration-300 ${sidebarOpen ? "translate-x-0" : "-translate-x-full"
+          } lg:translate-x-0`}
       >
         <div className="px-8 py-8">
           <Link href="/admin" className="text-2xl font-bold text-[#0F172A] tracking-tighter flex items-center gap-0.5">
@@ -71,11 +71,10 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
                 key={item.href}
                 href={item.href}
                 onClick={() => setSidebarOpen(false)}
-                className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-[13px] font-black uppercase tracking-widest transition-all group ${
-                  active
+                className={`w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-[13px] font-black uppercase tracking-widest transition-all group ${active
                     ? "bg-[#0F172A] text-white shadow-lg shadow-gray-200"
                     : "text-gray-400 hover:text-[#0F172A] hover:bg-gray-50"
-                }`}
+                  }`}
               >
                 <item.icon
                   size={18}
