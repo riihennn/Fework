@@ -14,6 +14,8 @@ const JobSchema = new Schema<IJob>(
       default: "pending",
     },
     scheduledAt: { type: Date, required: true },
+    startedAt: { type: Date },
+    endedAt: { type: Date },
     estimatedPay: { type: Number, required: true },
     actualPay: { type: Number },
     isUrgent: { type: Boolean, default: false },

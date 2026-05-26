@@ -89,7 +89,16 @@ export const respondToBooking = async (
 
     const job = await Job.findOne({ _id: jobId, worker: worker._id });
     if (!job) return sendError(res, "Job not found", 404);
-    if (job.status !== "pending") return sendError(res, "Job is no longer pending", 409);
+    
+    if (job.status !== "pending") {
+      if (action === "accept" && job.status === "accepted") {
+        return sendSuccess(res, "Booking already accepted", { status: job.status });
+      }
+      if (action === "decline" && job.status === "cancelled") {
+        return sendSuccess(res, "Booking already declined", { status: job.status });
+      }
+      return sendError(res, "Job is no longer pending", 409);
+    }
 
     job.status = action === "accept" ? "accepted" : "cancelled";
     await job.save();
@@ -136,12 +145,29 @@ export const updateJobStatus = async (
     if (!job) return sendError(res, "Job not found", 404);
 
     const allowed = validTransitions[job.status] || [];
+    
+    // If the job is already in the requested status, return success (idempotency)
+    if (job.status === status) {
+      return sendSuccess(res, "Job status already updated", { status: job.status });
+    }
+
     if (!allowed.includes(status)) {
       return sendError(res, `Cannot transition from '${job.status}' to '${status}'`, 409);
     }
 
     job.status = status;
-    if (actualPay) job.actualPay = actualPay;
+    if (status === "in_progress") {
+      job.startedAt = new Date();
+    } else if (status === "awaiting_approval") {
+      job.endedAt = new Date();
+      if (job.startedAt && worker.hourlyRate) {
+        const durationInMs = job.endedAt.getTime() - job.startedAt.getTime();
+        const durationInHours = Math.max(1, durationInMs / (1000 * 60 * 60)); // minimum 1 hour charge
+        job.actualPay = Math.round(durationInHours * worker.hourlyRate * 100) / 100; // round to 2 decimals
+      }
+    }
+
+    if (actualPay && status !== "awaiting_approval") job.actualPay = actualPay;
     if (workerNote) job.workerNote = workerNote;
     await job.save();
 

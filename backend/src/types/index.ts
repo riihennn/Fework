@@ -68,6 +68,8 @@ export interface IJob extends Document {
   location: string;
   status: JobStatus;
   scheduledAt: Date;
+  startedAt?: Date;
+  endedAt?: Date;
   estimatedPay: number;
   actualPay?: number;
   isUrgent: boolean;

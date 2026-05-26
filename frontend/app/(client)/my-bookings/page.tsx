@@ -246,6 +246,64 @@ function RescheduleModal({ job, onClose, onDone }: { job: BookingJob; onClose: (
   );
 }
 
+// ─── Bill Breakdown ──────────────────────────────────────────────────────
+function BillBreakdown({ job }: { job: BookingJob }) {
+  const startedAt = (job as any).startedAt;
+  const endedAt = (job as any).endedAt;
+  const workerRate = (job.worker as any)?.hourlyRate;
+
+  if (!startedAt || !endedAt || !workerRate) {
+    return (
+      <div className="p-4 bg-gray-50 rounded-2xl">
+        <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Payment Summary</p>
+        <div className="flex justify-between items-center mb-2">
+          <span className="text-sm text-gray-500">Estimated Price</span>
+          <span className="font-bold text-[#0F172A]">₹{job.estimatedPay.toLocaleString()}</span>
+        </div>
+        <div className="flex justify-between items-center pt-2 border-t border-gray-200">
+          <span className="text-sm font-bold text-[#0F172A]">Final Price</span>
+          <span className="text-xl font-black text-[#0F172A]">₹{(job.actualPay || job.estimatedPay).toLocaleString()}</span>
+        </div>
+      </div>
+    );
+  }
+
+  const durationInMs = new Date(endedAt).getTime() - new Date(startedAt).getTime();
+  
+  const h = Math.floor(durationInMs / (1000 * 60 * 60));
+  const m = Math.floor((durationInMs % (1000 * 60 * 60)) / (1000 * 60));
+
+  return (
+    <div className="p-4 bg-gray-50 rounded-2xl border border-gray-200">
+      <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Bill Breakdown</p>
+      
+      <div className="space-y-2 mb-3">
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-500">Start Time</span>
+          <span className="font-bold text-[#0F172A]">{new Date(startedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
+        </div>
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-500">End Time</span>
+          <span className="font-bold text-[#0F172A]">{new Date(endedAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}</span>
+        </div>
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-500">Total Duration</span>
+          <span className="font-bold text-[#0F172A]">{h}h {m}m</span>
+        </div>
+        <div className="flex justify-between items-center text-sm">
+          <span className="text-gray-500">Hourly Rate</span>
+          <span className="font-bold text-[#0F172A]">₹{workerRate}</span>
+        </div>
+      </div>
+
+      <div className="flex justify-between items-center pt-3 border-t border-gray-200">
+        <span className="text-sm font-bold text-[#0F172A]">Final Calculated Price</span>
+        <span className="text-xl font-black text-teal-600">₹{job.actualPay?.toLocaleString()}</span>
+      </div>
+    </div>
+  );
+}
+
 // ─── Approval Modal ──────────────────────────────────────────────────────
 function ApprovalModal({
   job,
@@ -317,17 +375,7 @@ function ApprovalModal({
 
         {/* Payment breakdown */}
         <div className="px-8 pt-6">
-          <div className="p-4 bg-gray-50 rounded-2xl">
-            <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Payment Summary</p>
-            <div className="flex justify-between items-center mb-2">
-              <span className="text-sm text-gray-500">Estimated Price</span>
-              <span className="font-bold text-[#0F172A]">₹{job.estimatedPay.toLocaleString()}</span>
-            </div>
-            <div className="flex justify-between items-center pt-2 border-t border-gray-200">
-              <span className="text-sm font-bold text-[#0F172A]">Pay to Worker (Cash)</span>
-              <span className="text-xl font-black text-[#0F172A]">₹{(job.actualPay || job.estimatedPay).toLocaleString()}</span>
-            </div>
-          </div>
+          <BillBreakdown job={job} />
         </div>
 
         {/* Action choice */}
@@ -589,24 +637,27 @@ function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => voi
 
           {/* Completed */}
           {job.status === "completed" && (
-            <div className="mb-5 p-4 bg-teal-50 border border-teal-100 rounded-2xl flex items-center gap-3">
-              <CheckCircle2 size={18} className="text-teal-500 shrink-0" />
-              <div>
-                <p className="text-sm font-bold text-teal-700">Payment Confirmed</p>
-                <p className="text-xs text-teal-600">Cash was paid to the worker on {new Date(job.clientApproval?.approvedAt || job.updatedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
+            <div className="mb-5 space-y-4">
+              <div className="p-4 bg-teal-50 border border-teal-100 rounded-2xl flex items-center gap-3">
+                <CheckCircle2 size={18} className="text-teal-500 shrink-0" />
+                <div>
+                  <p className="text-sm font-bold text-teal-700">Payment Confirmed</p>
+                  <p className="text-xs text-teal-600">Cash was paid to the worker on {new Date(job.clientApproval?.approvedAt || job.updatedAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}</p>
+                </div>
+                <div className="ml-auto shrink-0">
+                  {!job.reviewed ? (
+                    <button onClick={() => setShowReview(true)}
+                      className="h-8 px-3 rounded-xl bg-teal-100 text-teal-700 text-xs font-bold hover:bg-teal-200 transition-all flex items-center gap-1.5">
+                      <Star size={12} />Rate Worker
+                    </button>
+                  ) : (
+                    <span className="flex items-center gap-1 text-xs text-teal-500 font-bold">
+                      <Star size={12} className="fill-amber-400 text-amber-400" />Reviewed
+                    </span>
+                  )}
+                </div>
               </div>
-              <div className="ml-auto shrink-0">
-                {!job.reviewed ? (
-                  <button onClick={() => setShowReview(true)}
-                    className="h-8 px-3 rounded-xl bg-teal-100 text-teal-700 text-xs font-bold hover:bg-teal-200 transition-all flex items-center gap-1.5">
-                    <Star size={12} />Rate Worker
-                  </button>
-                ) : (
-                  <span className="flex items-center gap-1 text-xs text-teal-500 font-bold">
-                    <Star size={12} className="fill-amber-400 text-amber-400" />Reviewed
-                  </span>
-                )}
-              </div>
+              <BillBreakdown job={job} />
             </div>
           )}
 

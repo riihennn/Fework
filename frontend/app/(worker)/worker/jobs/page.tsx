@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase, Clock, CheckCircle2, XCircle, Loader2, MapPin,
   Calendar, RefreshCw, Zap, ChevronRight, AlertTriangle,
-  MessageSquare, User, Banknote, FileText, Send, CalendarClock
+  MessageSquare, User, Banknote, FileText, Send, CalendarClock, Play, Square, Timer
 } from "lucide-react";
 import { bookingApi, BookingJob, JobStatus } from "@/services/api";
 import StatusErrorModal from "@/components/worker/dashboard/StatusErrorModal";
@@ -26,8 +26,8 @@ const STATUS_TABS = ["", "pending", "accepted", "in_progress", "awaiting_approva
 
 // ─── Worker status transitions ─────────────────────────────────────────
 const WORKER_ACTIONS: Record<string, { label: string; next: string; icon: any; color: string }> = {
-  accepted:    { label: "Start Job",           next: "in_progress",       icon: ChevronRight, color: "bg-blue-600 hover:bg-blue-700 text-white" },
-  in_progress: { label: "Mark Ready for Review", next: "awaiting_approval", icon: Send,         color: "bg-orange-500 hover:bg-orange-600 text-white" },
+  accepted:    { label: "Start Job",           next: "in_progress",       icon: Play,         color: "bg-blue-600 hover:bg-blue-700 text-white" },
+  in_progress: { label: "End Job",             next: "awaiting_approval", icon: Square,       color: "bg-orange-500 hover:bg-orange-600 text-white" },
   disputed:    { label: "Re-submit for Review", next: "awaiting_approval", icon: Send,         color: "bg-orange-500 hover:bg-orange-600 text-white" },
 };
 
@@ -61,6 +61,34 @@ function WorkerNoteModal({
           <button onClick={() => onSubmit(note)} className="flex-1 h-12 rounded-2xl bg-orange-500 text-white text-sm font-bold hover:bg-orange-600 transition-all">Submit for Review</button>
         </div>
       </motion.div>
+    </div>
+  );
+}
+
+// ─── Live Timer ────────────────────────────────────────────────────────
+function LiveTimer({ startedAt }: { startedAt: string }) {
+  const [elapsed, setElapsed] = useState(0);
+
+  useEffect(() => {
+    if (!startedAt) return;
+    const start = new Date(startedAt).getTime();
+    
+    const update = () => {
+      setElapsed(Math.floor((Date.now() - start) / 1000));
+    };
+    update();
+    const interval = setInterval(update, 1000);
+    return () => clearInterval(interval);
+  }, [startedAt]);
+
+  const h = Math.floor(elapsed / 3600);
+  const m = Math.floor((elapsed % 3600) / 60);
+  const s = elapsed % 60;
+
+  return (
+    <div className="flex items-center gap-2 px-3 py-1.5 bg-indigo-50 border border-indigo-100 text-indigo-700 rounded-full font-mono text-sm font-bold shadow-sm">
+      <Timer size={14} className="animate-pulse text-indigo-500" />
+      {h.toString().padStart(2, "0")}:{m.toString().padStart(2, "0")}:{s.toString().padStart(2, "0")}
     </div>
   );
 }
@@ -177,6 +205,17 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
               <Clock size={20} className="text-orange-400 mx-auto mb-2" />
               <p className="text-sm font-bold text-orange-700">Waiting for client to confirm completion</p>
               <p className="text-xs text-orange-500 mt-1">The client will approve and release payment once satisfied</p>
+            </div>
+          )}
+
+          {/* In Progress Timer */}
+          {job.status === "in_progress" && (job as any).startedAt && (
+            <div className="mb-5 p-4 bg-indigo-50/50 border border-indigo-100 rounded-2xl flex items-center justify-between">
+              <div>
+                <p className="text-xs font-bold text-indigo-600 uppercase tracking-wider mb-1">Job in Progress</p>
+                <p className="text-sm text-indigo-700">Time spent working on this job.</p>
+              </div>
+              <LiveTimer startedAt={(job as any).startedAt} />
             </div>
           )}
 
