@@ -14,6 +14,7 @@ import bookingRoutes from "./routes/booking.routes";
 import reviewRoutes from "./routes/review.routes";
 import adminRoutes from "./routes/admin.routes";
 import messageRoutes from "./routes/message.routes";
+import skillRoutes from "./routes/skill.routes";
 import http from "http";
 import { SocketService } from "./services/socket.service";
 
@@ -50,6 +51,7 @@ app.use("/api/bookings", bookingRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/admin", adminRoutes);
 app.use("/api/messages", messageRoutes);
+app.use("/api/skills", skillRoutes);
 
 // ── 404 Handler ──────────────────────────────────────────────
 app.use((_req, res) => {

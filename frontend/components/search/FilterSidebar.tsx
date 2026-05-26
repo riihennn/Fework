@@ -2,110 +2,61 @@
 
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { 
-  ChevronRight, 
-  Search, 
-  SlidersHorizontal, 
-  ChevronDown, 
-  Wrench, 
-  Tv, 
-  Hammer, 
-  Sparkles, 
-  Check 
+import {
+  Search,
+  SlidersHorizontal,
+  ChevronDown,
+  Wrench, Tv, Hammer, Sparkles, Layers, Cog, Zap, Droplets, Paintbrush, Shield,
+  Check,
+  Loader2,
 } from "lucide-react";
+import { useSkillGroups } from "@/hooks/useSkillGroups";
 
-// Structured Category Groups with Lucide Icons
-const categoryGroups = [
-  {
-    name: "Repairs & Maintenance",
-    icon: Wrench,
-    categories: [
-      "Electrician",
-      "Plumber",
-      "Carpenter",
-      "Welder"
-    ]
-  },
-  {
-    name: "Electronics & Tech",
-    icon: Tv,
-    categories: [
-      "AC Technician",
-      "TV Repair Technician",
-      "Refrigerator Technician",
-      "Washing Machine Technician",
-      "Water Purifier Technician",
-      "Generator Technician",
-      "CCTV Installer",
-      "Solar Panel Technician",
-      "Internet/WiFi Technician",
-      "Mobile Repair Technician",
-      "Computer Technician"
-    ]
-  },
-  {
-    name: "Construction & Interior",
-    icon: Hammer,
-    categories: [
-      "Mason",
-      "Tiles Worker",
-      "Painter",
-      "Steel Fabricator",
-      "False Ceiling Worker",
-      "Interior Designer",
-      "POP Worker",
-      "Glass Installer",
-      "Roofing Worker"
-    ]
-  },
-  {
-    name: "Cleaning & Outdoors",
-    icon: Sparkles,
-    categories: [
-      "House Cleaner",
-      "Deep Cleaning Worker",
-      "Bathroom Cleaner",
-      "Gardener",
-      "Tree Cutter"
-    ]
-  }
-];
+// Icon resolver — maps string icon name from DB to Lucide component
+const ICON_MAP: Record<string, React.ElementType> = {
+  Wrench, Tv, Hammer, Sparkles, Layers, Cog, Zap, Droplets, Paintbrush, Shield,
+};
+
+function GroupIcon({ name, size = 14 }: { name: string; size?: number }) {
+  const Icon = ICON_MAP[name] || Wrench;
+  return <Icon size={size} />;
+}
 
 export default function FilterSidebar() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const activeCategory = searchParams.get("category") || "All";
   const [searchTerm, setSearchTerm] = useState("");
-
-  // Control accordion expanded state
   const [expandedGroups, setExpandedGroups] = useState<Record<string, boolean>>({});
 
-  // Sync expanded state with active category when component loads or activeCategory changes
+  const { groups, loading } = useSkillGroups();
+
+  // Auto-expand the group containing the active category, or the first group
   useEffect(() => {
+    if (groups.length === 0) return;
     const initial: Record<string, boolean> = {};
     let foundActive = false;
 
-    categoryGroups.forEach((group) => {
-      const containsActive = group.categories.some(
-        (cat) => cat.toLowerCase() === activeCategory.toLowerCase()
+    groups.forEach((group) => {
+      const containsActive = group.skills.some(
+        (s) => s.name.toLowerCase() === activeCategory.toLowerCase()
       );
       if (containsActive) {
-        initial[group.name] = true;
+        initial[group.category] = true;
         foundActive = true;
       }
     });
 
-    // If "All" or a non-matching category is selected, expand the first group by default
-    if (!foundActive && categoryGroups.length > 0) {
-      initial[categoryGroups[0].name] = true;
+    if (!foundActive && groups.length > 0) {
+      initial[groups[0].category] = true;
     }
 
     setExpandedGroups(initial);
-  }, [activeCategory]);
+  }, [activeCategory, groups]);
 
   const handleCategoryChange = (cat: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    params.delete("search"); // Clear search query to avoid category conflict
+    params.delete("search");
     if (cat === "All") {
       params.delete("category");
     } else {
@@ -116,25 +67,19 @@ export default function FilterSidebar() {
 
   const isSearching = searchTerm.trim().length > 0;
 
-  // Filter category groups based on search term
-  const filteredGroups = categoryGroups
-    .map((group) => {
-      const filteredCats = group.categories.filter((cat) =>
-        cat.toLowerCase().includes(searchTerm.toLowerCase())
-      );
-      return {
-        ...group,
-        categories: filteredCats,
-      };
-    })
-    .filter((group) => group.categories.length > 0);
+  // Filter groups based on search term
+  const filteredGroups = groups
+    .map((group) => ({
+      ...group,
+      skills: group.skills.filter((s) =>
+        s.name.toLowerCase().includes(searchTerm.toLowerCase())
+      ),
+    }))
+    .filter((group) => group.skills.length > 0);
 
   const toggleGroup = (groupName: string) => {
-    if (isSearching) return; // Don't toggle manually during search
-    setExpandedGroups((prev) => ({
-      ...prev,
-      [groupName]: !prev[groupName],
-    }));
+    if (isSearching) return;
+    setExpandedGroups((prev) => ({ ...prev, [groupName]: !prev[groupName] }));
   };
 
   return (
@@ -159,9 +104,9 @@ export default function FilterSidebar() {
         />
       </div>
 
-      {/* Categories Content Container */}
+      {/* Categories Content */}
       <div className="space-y-3 mb-8">
-        {/* All Services option */}
+        {/* All Services */}
         {!isSearching && (
           <button
             onClick={() => handleCategoryChange("All")}
@@ -183,26 +128,34 @@ export default function FilterSidebar() {
           </button>
         )}
 
+        {/* Loading state */}
+        {loading && (
+          <div className="flex items-center justify-center py-8 gap-2 text-slate-400">
+            <Loader2 size={14} className="animate-spin" />
+            <span className="text-xs font-semibold">Loading...</span>
+          </div>
+        )}
+
         {/* Grouped Accordions */}
-        {filteredGroups.length > 0 ? (
+        {!loading && filteredGroups.length > 0 ? (
           filteredGroups.map((group) => {
-            const hasActiveCategory = group.categories.some(
-              (cat) => cat.toLowerCase() === activeCategory.toLowerCase()
+            const hasActiveCategory = group.skills.some(
+              (s) => s.name.toLowerCase() === activeCategory.toLowerCase()
             );
-            const isExpanded = isSearching ? true : !!expandedGroups[group.name];
+            const isExpanded = isSearching ? true : !!expandedGroups[group.category];
 
             return (
-              <div 
-                key={group.name} 
+              <div
+                key={group.category}
                 className={`border rounded-2xl overflow-hidden bg-white transition-all duration-300 ${
-                  hasActiveCategory 
-                    ? "border-slate-200 shadow-sm" 
+                  hasActiveCategory
+                    ? "border-slate-200 shadow-sm"
                     : "border-slate-100 hover:border-slate-200/80"
                 }`}
               >
                 {/* Accordion Header */}
                 <button
-                  onClick={() => toggleGroup(group.name)}
+                  onClick={() => toggleGroup(group.category)}
                   disabled={isSearching}
                   className={`w-full flex items-center justify-between px-4 py-3 text-left transition-all ${
                     hasActiveCategory ? "bg-slate-50/80" : "bg-slate-50/30 hover:bg-slate-50/60"
@@ -210,58 +163,52 @@ export default function FilterSidebar() {
                 >
                   <div className="flex items-center gap-3 min-w-0">
                     <div className={`w-8 h-8 rounded-xl flex items-center justify-center shrink-0 transition-all ${
-                      hasActiveCategory 
-                        ? "bg-[#0F172A] text-teal-400" 
-                        : "bg-slate-100 text-slate-500"
+                      hasActiveCategory ? "bg-[#0F172A] text-teal-400" : "bg-slate-100 text-slate-500"
                     }`}>
-                      <group.icon size={14} />
+                      <GroupIcon name={group.icon} size={14} />
                     </div>
                     <div className="min-w-0">
                       <span className="text-xs font-bold text-[#0F172A] block truncate">
-                        {group.name}
+                        {group.category}
                       </span>
                       <span className="text-[10px] text-slate-400 font-semibold block">
-                        {group.categories.length} {group.categories.length === 1 ? "service" : "services"}
+                        {group.skills.length} {group.skills.length === 1 ? "service" : "services"}
                       </span>
                     </div>
                   </div>
-                  
+
                   <div className="flex items-center gap-2 shrink-0">
                     {hasActiveCategory && !isExpanded && (
-                      <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse"></span>
+                      <span className="w-1.5 h-1.5 rounded-full bg-teal-500 animate-pulse" />
                     )}
                     {!isSearching && (
-                      <ChevronDown 
-                        size={14} 
-                        className={`text-slate-400 transition-transform duration-300 ${
-                          isExpanded ? "rotate-180" : ""
-                        }`} 
+                      <ChevronDown
+                        size={14}
+                        className={`text-slate-400 transition-transform duration-300 ${isExpanded ? "rotate-180" : ""}`}
                       />
                     )}
                   </div>
                 </button>
 
                 {/* Accordion Body */}
-                <div 
-                  className={`transition-all duration-300 ease-in-out overflow-hidden ${
-                    isExpanded 
-                      ? "max-h-[500px] border-t border-slate-100/50 p-2 space-y-0.5 bg-white opacity-100" 
-                      : "max-h-0 opacity-0 pointer-events-none"
-                  }`}
-                >
-                  {group.categories.map((cat) => {
-                    const isActive = activeCategory.toLowerCase() === cat.toLowerCase();
+                <div className={`transition-all duration-300 ease-in-out overflow-hidden ${
+                  isExpanded
+                    ? "max-h-[500px] border-t border-slate-100/50 p-2 space-y-0.5 bg-white opacity-100"
+                    : "max-h-0 opacity-0 pointer-events-none"
+                }`}>
+                  {group.skills.map((skill) => {
+                    const isActive = activeCategory.toLowerCase() === skill.name.toLowerCase();
                     return (
                       <button
-                        key={cat}
-                        onClick={() => handleCategoryChange(cat)}
+                        key={skill._id}
+                        onClick={() => handleCategoryChange(skill.name)}
                         className={`w-full flex items-center justify-between px-3.5 py-2.5 rounded-xl text-left font-bold text-xs transition-all ${
                           isActive
                             ? "bg-[#0F172A] text-white shadow-sm"
                             : "text-slate-600 hover:bg-slate-50 hover:text-[#0F172A]"
                         }`}
                       >
-                        <span className="truncate">{cat}</span>
+                        <span className="truncate">{skill.name}</span>
                         {isActive && <Check size={12} className="text-teal-400 shrink-0" />}
                       </button>
                     );
@@ -271,13 +218,13 @@ export default function FilterSidebar() {
             );
           })
         ) : (
-          <div className="text-center py-8 text-slate-400 text-xs font-semibold">
-            No matching categories found
-          </div>
+          !loading && (
+            <div className="text-center py-8 text-slate-400 text-xs font-semibold">
+              No matching categories found
+            </div>
+          )
         )}
       </div>
-
     </aside>
   );
 }
-

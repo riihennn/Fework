@@ -8,7 +8,8 @@ import {
   Phone, Star, ChevronRight, X, XCircle, CalendarClock,
   ChevronLeft, MessageSquare
 } from "lucide-react";
-import { bookingApi, reviewApi, BookingJob } from "@/services/api";
+import { io } from "socket.io-client";
+import { bookingApi, reviewApi, BookingJob, API_BASE_URL } from "@/services/api";
 import ChatBox from "@/components/shared/ChatBox";
 import { useAuthStore } from "@/store/authStore";
 
@@ -695,9 +696,9 @@ function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => voi
           )}
 
           {/* Chat Action */}
-          {["accepted", "in_progress", "awaiting_approval"].includes(job.status) && (
+          {["accepted", "in_progress", "awaiting_approval", "completed", "disputed"].includes(job.status) && (
             <div className="flex mb-4">
-              <button onClick={() => window.dispatchEvent(new CustomEvent("open-chat-client", { detail: { id: job._id, title: job.service } }))}
+              <button onClick={() => window.dispatchEvent(new CustomEvent("open-chat-client", { detail: { id: job._id, title: workerUser?.name || "Professional", status: job.status } }))}
                 className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-teal-50 text-teal-600 border border-teal-100 text-sm font-bold hover:bg-teal-100 transition-all">
                 <MessageSquare size={16} /> Chat with Worker
               </button>
@@ -748,19 +749,20 @@ export default function MyBookingsPage() {
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
-  const [activeChatJob, setActiveChatJob] = useState<{ id: string; title: string } | null>(null);
+  const [activeChatJob, setActiveChatJob] = useState<{ id: string; title: string; status: string } | null>(null);
   const { user } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
 
-  const fetchJobs = useCallback(async (status: string, p: number) => {
-    setLoading(true); setError(null);
+  const fetchJobs = useCallback(async (status: string, p: number, silent = false) => {
+    if (!silent) setLoading(true);
+    setError(null);
     try {
       const params: Record<string, string> = { page: String(p), limit: "10" };
       if (status) params.status = status;
       const res = await bookingApi.getClientJobs(params);
       setJobs(res.jobs); setTotal(res.pagination.total); setPages(res.pagination.pages);
     } catch (e: any) { setError(e.message || "Failed to load bookings"); }
-    finally { setLoading(false); }
+    finally { if (!silent) setLoading(false); }
   }, []);
 
   useEffect(() => { fetchJobs(activeStatus, page); }, [activeStatus, page, fetchJobs]);
@@ -770,6 +772,29 @@ export default function MyBookingsPage() {
     window.addEventListener("open-chat-client", handleOpenChat);
     return () => window.removeEventListener("open-chat-client", handleOpenChat);
   }, []);
+
+  useEffect(() => {
+    if (!user?._id) return;
+
+    const socketURL = API_BASE_URL.replace("/api", "");
+    const socket = io(socketURL, { withCredentials: true });
+
+    socket.on("connect", () => {
+      socket.emit("join_user", user._id);
+    });
+
+    socket.on("new_booking", () => {
+      fetchJobs(activeStatus, page, true);
+    });
+
+    socket.on("booking_updated", () => {
+      fetchJobs(activeStatus, page, true);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user, activeStatus, page, fetchJobs]);
 
   return (
     <div className="min-h-screen bg-[#f8f9fb]">
@@ -837,7 +862,7 @@ export default function MyBookingsPage() {
               </motion.div>
             ) : (
               jobs.map(job => (
-                <BookingCard key={job._id} job={job} onRefresh={() => fetchJobs(activeStatus, page)} />
+                <BookingCard key={job._id} job={job} onRefresh={() => fetchJobs(activeStatus, page, true)} />
               ))
             )}
           </AnimatePresence>
@@ -865,6 +890,7 @@ export default function MyBookingsPage() {
         jobTitle={activeChatJob?.title || ""}
         currentUserId={user?._id || ""}
         currentUserModel="User"
+        readOnly={["completed", "disputed", "cancelled"].includes(activeChatJob?.status || "")}
       />
     </div>
   );

@@ -3,67 +3,7 @@
 import React, { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Search, MapPin } from "lucide-react";
-
-// Structured Category Groups matching FilterSidebar
-const categoryGroups = [
-  {
-    name: "Repairs & Maintenance",
-    categories: [
-      "Electrician",
-      "Plumber",
-      "Carpenter",
-      "Welder"
-    ]
-  },
-  {
-    name: "Electronics & Tech",
-    categories: [
-      "AC Technician",
-      "TV Repair Technician",
-      "Refrigerator Technician",
-      "Washing Machine Technician",
-      "Water Purifier Technician",
-      "Generator Technician",
-      "CCTV Installer",
-      "Solar Panel Technician",
-      "Internet/WiFi Technician",
-      "Mobile Repair Technician",
-      "Computer Technician"
-    ]
-  },
-  {
-    name: "Construction & Interior",
-    categories: [
-      "Mason",
-      "Tiles Worker",
-      "Painter",
-      "Steel Fabricator",
-      "False Ceiling Worker",
-      "Interior Designer",
-      "POP Worker",
-      "Glass Installer",
-      "Roofing Worker"
-    ]
-  },
-  {
-    name: "Cleaning & Outdoors",
-    categories: [
-      "House Cleaner",
-      "Deep Cleaning Worker",
-      "Bathroom Cleaner",
-      "Gardener",
-      "Tree Cutter"
-    ]
-  }
-];
-
-const mobileGroups = [
-  { id: "All", label: "All Services" },
-  { id: "Repairs & Maintenance", label: "Repairs" },
-  { id: "Electronics & Tech", label: "Electronics" },
-  { id: "Construction & Interior", label: "Construction" },
-  { id: "Cleaning & Outdoors", label: "Cleaning" }
-];
+import { useSkillGroups } from "@/hooks/useSkillGroups";
 
 export default function SearchHeader({ totalWorkers }: { totalWorkers: number }) {
   const router = useRouter();
@@ -72,9 +12,9 @@ export default function SearchHeader({ totalWorkers }: { totalWorkers: number })
   const [searchQuery, setSearchQuery] = useState(searchParams.get("search") || "");
   const [locationQuery, setLocationQuery] = useState(searchParams.get("city") || "");
   const activeCategory = searchParams.get("category") || "All";
-
-  // State to track which group is viewed/active
   const [viewedGroup, setViewedGroup] = useState<string>("All");
+
+  const { groups } = useSkillGroups();
 
   // Sync inputs when URL search parameters change
   useEffect(() => {
@@ -87,54 +27,41 @@ export default function SearchHeader({ totalWorkers }: { totalWorkers: number })
     if (activeCategory === "All") {
       setViewedGroup("All");
     } else {
-      const parentGroup = categoryGroups.find((group) =>
-        group.categories.some((cat) => cat.toLowerCase() === activeCategory.toLowerCase())
+      const parentGroup = groups.find((group) =>
+        group.skills.some((s) => s.name.toLowerCase() === activeCategory.toLowerCase())
       );
-      if (parentGroup) {
-        setViewedGroup(parentGroup.name);
-      }
+      if (parentGroup) setViewedGroup(parentGroup.category);
     }
-  }, [activeCategory]);
+  }, [activeCategory, groups]);
 
   const handleSearch = () => {
     const params = new URLSearchParams(searchParams.toString());
     const q = searchQuery.trim();
     const l = locationQuery.trim();
-
-    if (q) {
-      params.set("search", q);
-      params.delete("category"); // Clear category filter to avoid conflict on text search
-    } else {
-      params.delete("search");
-    }
-
+    if (q) { params.set("search", q); params.delete("category"); }
+    else { params.delete("search"); }
     if (l) params.set("city", l);
     else params.delete("city");
-
     router.push(`/findservices?${params.toString()}`);
   };
 
   const handleCategoryChange = (cat: string) => {
     const params = new URLSearchParams(searchParams.toString());
-    params.delete("search"); // Clear search query to avoid conflict on category change
-    if (cat === "All") {
-      params.delete("category");
-    } else {
-      params.set("category", cat);
-    }
+    params.delete("search");
+    if (cat === "All") { params.delete("category"); }
+    else { params.set("category", cat); }
     router.push(`/findservices?${params.toString()}`);
   };
 
-  const handleGroupSelect = (groupId: string) => {
-    if (groupId === "All") {
+  const handleGroupSelect = (groupCategory: string) => {
+    if (groupCategory === "All") {
       setViewedGroup("All");
       handleCategoryChange("All");
     } else {
-      const group = categoryGroups.find((g) => g.name === groupId);
-      if (group && group.categories.length > 0) {
-        setViewedGroup(groupId);
-        // Snappy selection: default to the first category in the selected group
-        handleCategoryChange(group.categories[0]);
+      const group = groups.find((g) => g.category === groupCategory);
+      if (group && group.skills.length > 0) {
+        setViewedGroup(groupCategory);
+        handleCategoryChange(group.skills[0].name);
       }
     }
   };
@@ -143,11 +70,21 @@ export default function SearchHeader({ totalWorkers }: { totalWorkers: number })
     if (e.key === "Enter") handleSearch();
   };
 
-  const currentGroupCategories = categoryGroups.find((g) => g.name === viewedGroup)?.categories || [];
+  // Skills under currently viewed group
+  const currentGroupSkills = groups.find((g) => g.category === viewedGroup)?.skills || [];
+
+  // Mobile group tabs — built from API data
+  const mobileGroupTabs = [
+    { id: "All", label: "All Services" },
+    ...groups.map((g) => ({
+      id: g.category,
+      label: g.category.split(" ")[0], // First word as short label
+    })),
+  ];
 
   return (
     <div className="flex flex-col gap-6 mb-10 md:mb-14">
-      {/* Title Section */}
+      {/* Title */}
       <div className="text-center md:text-left">
         <h1 className="text-3xl md:text-4xl font-black text-[#0F172A] tracking-tight mb-2">
           Find Your Next Service Expert
@@ -157,11 +94,11 @@ export default function SearchHeader({ totalWorkers }: { totalWorkers: number })
         </p>
       </div>
 
-      {/* Indeed-style prominent Search Bar */}
+      {/* Search Bar */}
       <div className="w-full bg-white rounded-3xl border border-gray-400 shadow-[0_15px_40px_rgba(15,23,42,0.05)] p-2 md:p-3 transition-all duration-300">
         <div className="flex flex-col md:flex-row items-stretch md:items-center gap-2 md:gap-0">
 
-          {/* WHAT INPUT */}
+          {/* WHAT */}
           <div className="flex-1 flex items-center relative py-2.5 md:py-1.5 px-4 border-b md:border-b-0 md:border-r border-slate-100">
             <Search className="text-slate-400 mr-3 shrink-0" size={18} />
             <div className="flex-grow flex flex-col items-start min-w-0">
@@ -171,12 +108,12 @@ export default function SearchHeader({ totalWorkers }: { totalWorkers: number })
                 value={searchQuery}
                 onChange={(e) => setSearchQuery(e.target.value)}
                 onKeyDown={handleKeyDown}
-                className="w-full bg-transparent text-sm  text-[#0F172A] placeholder-slate-400 focus:outline-none h-6 min-w-0"
+                className="w-full bg-transparent text-sm text-[#0F172A] placeholder-slate-400 focus:outline-none h-6 min-w-0"
               />
             </div>
           </div>
 
-          {/* WHERE INPUT */}
+          {/* WHERE */}
           <div className="flex-1 flex items-center relative py-2.5 md:py-1.5 px-4 border-b md:border-b-0 md:border-r border-slate-100 md:pl-6">
             <MapPin className="text-slate-400 mr-3 shrink-0" size={18} />
             <div className="flex-grow flex flex-col items-start min-w-0">
@@ -191,53 +128,54 @@ export default function SearchHeader({ totalWorkers }: { totalWorkers: number })
             </div>
           </div>
 
-          {/* BUTTON */}
+          {/* Button */}
           <button
             onClick={handleSearch}
             className="h-12 md:h-14 px-10 bg-[#0F172A] text-white text-[10px] font-black uppercase tracking-widest items-center justify-center hover:bg-slate-800 transition-all cursor-pointer rounded-2xl md:ml-3 shrink-0 shadow-sm"
           >
             Find Services
           </button>
-
         </div>
       </div>
 
       {/* Mobile/Tablet Category Quick Filters (Two-Tier) */}
       <div className="lg:hidden flex flex-col gap-3 w-full">
-        {/* Tier 1: Groups */}
+        {/* Tier 1: Group tabs */}
         <div className="w-full overflow-x-auto py-1 px-1 flex gap-2 scrollbar-none">
-          {mobileGroups.map((group) => {
-            const isSelected = viewedGroup === group.id;
+          {mobileGroupTabs.map((tab) => {
+            const isSelected = viewedGroup === tab.id;
             return (
               <button
-                key={group.id}
-                onClick={() => handleGroupSelect(group.id)}
-                className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider whitespace-nowrap transition-all border ${isSelected
-                  ? "bg-[#0F172A] border-[#0F172A] text-white shadow-sm"
-                  : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-[#0F172A]"
-                  }`}
+                key={tab.id}
+                onClick={() => handleGroupSelect(tab.id)}
+                className={`px-4 py-2.5 rounded-xl text-[10px] font-black uppercase tracking-wider whitespace-nowrap transition-all border ${
+                  isSelected
+                    ? "bg-[#0F172A] border-[#0F172A] text-white shadow-sm"
+                    : "bg-white border-slate-200 text-slate-500 hover:bg-slate-50 hover:text-[#0F172A]"
+                }`}
               >
-                {group.label}
+                {tab.label}
               </button>
             );
           })}
         </div>
 
-        {/* Tier 2: Specific Categories under selected Group */}
-        {viewedGroup !== "All" && currentGroupCategories.length > 0 && (
+        {/* Tier 2: Skills in selected group */}
+        {viewedGroup !== "All" && currentGroupSkills.length > 0 && (
           <div className="w-full overflow-x-auto py-1.5 px-1 flex gap-2 scrollbar-none border-t border-slate-100/60 pt-3 transition-all duration-300">
-            {currentGroupCategories.map((cat) => {
-              const isActive = activeCategory.toLowerCase() === cat.toLowerCase();
+            {currentGroupSkills.map((skill) => {
+              const isActive = activeCategory.toLowerCase() === skill.name.toLowerCase();
               return (
                 <button
-                  key={cat}
-                  onClick={() => handleCategoryChange(cat)}
-                  className={`px-3.5 py-2 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all border ${isActive
-                    ? "bg-teal-500 border-teal-500 text-white shadow-sm"
-                    : "bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
-                    }`}
+                  key={skill._id}
+                  onClick={() => handleCategoryChange(skill.name)}
+                  className={`px-3.5 py-2 rounded-lg text-[10px] font-bold whitespace-nowrap transition-all border ${
+                    isActive
+                      ? "bg-teal-500 border-teal-500 text-white shadow-sm"
+                      : "bg-slate-50 border-slate-100 text-slate-500 hover:bg-slate-100 hover:text-slate-800"
+                  }`}
                 >
-                  {cat}
+                  {skill.name}
                 </button>
               );
             })}
@@ -247,4 +185,3 @@ export default function SearchHeader({ totalWorkers }: { totalWorkers: number })
     </div>
   );
 }
-

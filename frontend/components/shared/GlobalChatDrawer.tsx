@@ -7,19 +7,35 @@ import { bookingApi, messageApi, BookingJob } from "@/services/api";
 import ChatBox from "./ChatBox";
 import Avatar from "./Avatar";
 import { useAuthStore } from "@/store/authStore";
+import { useNotificationStore } from "@/store/notificationStore";
 import Link from "next/link";
 
 interface GlobalChatDrawerProps {
-  isOpen: boolean;
-  onClose: () => void;
+  isOpen?: boolean;
+  onClose?: () => void;
 }
 
-export default function GlobalChatDrawer({ isOpen, onClose }: GlobalChatDrawerProps) {
+export default function GlobalChatDrawer({ isOpen: propIsOpen, onClose: propOnClose }: GlobalChatDrawerProps = {}) {
   const { user } = useAuthStore();
+  const { isChatDrawerOpen, setChatDrawerOpen, activeChatJobId, setActiveChatJobId } = useNotificationStore();
+
+  const isOpen = propIsOpen !== undefined ? propIsOpen : isChatDrawerOpen;
+
+  const onClose = () => {
+    if (propOnClose) {
+      propOnClose();
+    } else {
+      setChatDrawerOpen(false);
+    }
+    setActiveChatJob(null);
+    setActiveChatJobId(null);
+  };
+
   const [jobs, setJobs] = useState<BookingJob[]>([]);
   const [loading, setLoading] = useState(false);
-  const [activeChatJob, setActiveChatJob] = useState<{ id: string; title: string } | null>(null);
+  const [activeChatJob, setActiveChatJob] = useState<{ id: string; title: string; status: string } | null>(null);
   const [lastMessages, setLastMessages] = useState<Record<string, any>>({});
+  const [showMenu, setShowMenu] = useState(false);
 
   const fetchJobs = useCallback(async () => {
     if (!user) return;
@@ -33,7 +49,7 @@ export default function GlobalChatDrawer({ isOpen, onClose }: GlobalChatDrawerPr
       }
 
       const activeJobs = res.jobs.filter((j: BookingJob) =>
-        ["accepted", "in_progress", "awaiting_approval"].includes(j.status)
+        ["accepted", "in_progress", "awaiting_approval", "completed", "disputed"].includes(j.status)
       );
 
       const uniqueJobs: BookingJob[] = [];
@@ -85,6 +101,28 @@ export default function GlobalChatDrawer({ isOpen, onClose }: GlobalChatDrawerPr
     }
   }, [jobs]);
 
+  useEffect(() => {
+    if (activeChatJobId && jobs.length > 0) {
+      const job = jobs.find((j) => j._id === activeChatJobId);
+      if (job) {
+        const workerInfo = typeof job.worker === "object" ? (job.worker as any).user : null;
+        const otherParty = user?.role === "worker" ? job.client : workerInfo;
+        const name = typeof otherParty === "object" ? (otherParty as any)?.name : "User";
+        setActiveChatJob({ id: job._id, title: name || "User", status: job.status });
+      }
+    }
+  }, [activeChatJobId, jobs, user]);
+
+  const handleClearAllChats = async () => {
+    try {
+      await messageApi.clearAllChats();
+      setLastMessages({});
+      setShowMenu(false);
+    } catch (e) {
+      console.error("Failed to clear all chats", e);
+    }
+  };
+
   return (
     <AnimatePresence>
       {isOpen && (
@@ -94,14 +132,14 @@ export default function GlobalChatDrawer({ isOpen, onClose }: GlobalChatDrawerPr
             animate={{ opacity: 1 }}
             exit={{ opacity: 0 }}
             onClick={onClose}
-            className="fixed inset-0 z-[9990] bg-black/40 backdrop-blur-[2px]"
+            className="fixed inset-0 z-[9990] bg-black/50"
           />
 
           <motion.div
             initial={{ x: "100%" }}
             animate={{ x: 0 }}
             exit={{ x: "100%" }}
-            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            transition={{ type: "tween", duration: 0.25, ease: "easeOut" }}
             className="fixed top-0 right-0 bottom-0 w-full max-w-sm bg-white shadow-2xl z-[9991] flex flex-col border-l border-gray-100"
           >
             <div className="h-[64px] px-5 flex items-center justify-between bg-white border-b border-gray-100 shrink-0 shadow-sm">
@@ -111,10 +149,23 @@ export default function GlobalChatDrawer({ isOpen, onClose }: GlobalChatDrawerPr
                 </div>
                 <h3 className="font-semibold text-[#0F172A] tracking-tight text-[15px]">Chats</h3>
               </div>
-              <div className="flex items-center gap-1">
-                <button className="p-2 rounded-full text-gray-400 hover:bg-gray-100 transition-all">
+              <div className="flex items-center gap-1 relative">
+                <button
+                  onClick={() => setShowMenu(!showMenu)}
+                  className="p-2 rounded-full text-gray-400 hover:bg-gray-100 transition-all"
+                >
                   <MoreVertical size={20} className="text-gray-500" />
                 </button>
+                {showMenu && (
+                  <div className="absolute top-12 right-10 bg-white border border-gray-100 shadow-lg rounded-xl py-2 w-48 z-[9992]">
+                    <button
+                      onClick={handleClearAllChats}
+                      className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 font-medium transition-colors"
+                    >
+                      Delete all chats
+                    </button>
+                  </div>
+                )}
                 <button
                   onClick={onClose}
                   className="p-2 rounded-full text-gray-400 hover:bg-gray-100 transition-all"
@@ -150,12 +201,12 @@ export default function GlobalChatDrawer({ isOpen, onClose }: GlobalChatDrawerPr
                     const name = typeof otherParty === "object" ? (otherParty as any)?.name : "User";
                     const avatar = typeof otherParty === "object" ? (otherParty as any)?.avatar : null;
                     const lastMsg = lastMessages[job._id];
-                    const isMine = lastMsg?.sender === user?._id;
+                    const isMine = lastMsg?.senderId === user?._id;
 
                     return (
                       <button
                         key={job._id}
-                        onClick={() => setActiveChatJob({ id: job._id, title: name || "User" })}
+                        onClick={() => setActiveChatJob({ id: job._id, title: name || "User", status: job.status })}
                         className="w-full bg-white border-b border-gray-100 p-4 flex items-center gap-4 hover:bg-gray-50 transition-all text-left"
                       >
                         <Avatar
@@ -174,7 +225,7 @@ export default function GlobalChatDrawer({ isOpen, onClose }: GlobalChatDrawerPr
                           <div className="flex items-center gap-1 mt-0.5">
                             {isMine && <CheckCheck size={15} className="text-gray-400 shrink-0" />}
                             <p className="text-[13px] text-gray-500 truncate">
-                              {lastMsg ? lastMsg.text : job.service}
+                              {lastMsg ? lastMsg.message : job.service}
                             </p>
                           </div>
                         </div>
@@ -193,6 +244,7 @@ export default function GlobalChatDrawer({ isOpen, onClose }: GlobalChatDrawerPr
             jobTitle={activeChatJob?.title || ""}
             currentUserId={user?._id || ""}
             currentUserModel={user?.role === "worker" ? "Worker" : "User"}
+            readOnly={["completed", "disputed", "cancelled"].includes(activeChatJob?.status || "")}
           />
         </>
       )}

@@ -7,7 +7,8 @@ import {
   Calendar, RefreshCw, Zap, ChevronRight, AlertTriangle,
   MessageSquare, User, Banknote, FileText, Send, CalendarClock, Play, Square, Timer
 } from "lucide-react";
-import { bookingApi, BookingJob, JobStatus } from "@/services/api";
+import { io } from "socket.io-client";
+import { bookingApi, BookingJob, JobStatus, API_BASE_URL } from "@/services/api";
 import StatusErrorModal from "@/components/worker/dashboard/StatusErrorModal";
 import ChatBox from "@/components/shared/ChatBox";
 import Avatar from "@/components/shared/Avatar";
@@ -320,6 +321,7 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
 
 // ─── Main Page ─────────────────────────────────────────────────────────
 export default function JobsPage() {
+  const { user } = useAuthStore();
   const [activeStatus, setActiveStatus] = useState("");
   const [jobs, setJobs] = useState<BookingJob[]>([]);
   const [total, setTotal] = useState(0);
@@ -328,21 +330,44 @@ export default function JobsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchJobs = useCallback(async (status: string, p: number) => {
-    setLoading(true); setError(null);
+  const fetchJobs = useCallback(async (status: string, p: number, silent = false) => {
+    if (!silent) setLoading(true);
+    setError(null);
     try {
       const params: Record<string, string> = { page: String(p), limit: "10" };
       if (status) params.status = status;
       const res = await bookingApi.getWorkerJobs(params);
       setJobs(res.jobs); setTotal(res.pagination.total); setPages(res.pagination.pages);
     } catch (e: any) { setError(e.message || "Failed to load jobs"); }
-    finally { setLoading(false); }
+    finally { if (!silent) setLoading(false); }
   }, []);
 
   useEffect(() => {
     fetchJobs(activeStatus, page);
   }, [fetchJobs, activeStatus, page]);
 
+  useEffect(() => {
+    if (!user?._id) return;
+
+    const socketURL = API_BASE_URL.replace("/api", "");
+    const socket = io(socketURL, { withCredentials: true });
+
+    socket.on("connect", () => {
+      socket.emit("join_user", user._id);
+    });
+
+    socket.on("new_booking", () => {
+      fetchJobs(activeStatus, page, true);
+    });
+
+    socket.on("booking_updated", () => {
+      fetchJobs(activeStatus, page, true);
+    });
+
+    return () => {
+      socket.disconnect();
+    };
+  }, [user, activeStatus, page, fetchJobs]);
 
   return (
     <div className="max-w-5xl space-y-8">
@@ -408,8 +433,8 @@ export default function JobsPage() {
               </p>
             </motion.div>
           ) : (
-            jobs.map(job => (
-              <JobCard key={job._id} job={job} onAction={() => fetchJobs(activeStatus, page)} />
+             jobs.map(job => (
+              <JobCard key={job._id} job={job} onAction={() => fetchJobs(activeStatus, page, true)} />
             ))
           )}
         </AnimatePresence>

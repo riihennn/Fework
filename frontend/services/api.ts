@@ -313,16 +313,22 @@ export const reviewApi = {
 // ─── Message API ──────────────────────────────────────────
 export interface ChatMessage {
   _id: string;
-  job: string;
-  sender: string;
-  senderModel: "User" | "Worker";
-  text: string;
+  roomId: string;
+  senderId: string;
+  senderRole: "client" | "worker";
+  message: string;
+  messageType?: "text" | "image";
+  isRead?: boolean;
   createdAt: string;
 }
 
 export const messageApi = {
   getMessages: (jobId: string) =>
     request<ChatMessage[]>(`/messages/${jobId}`, "GET"),
+  clearChat: (jobId: string) =>
+    request<null>(`/messages/${jobId}`, "DELETE"),
+  clearAllChats: () =>
+    request<null>("/messages/all", "DELETE"),
 };
 
 // ─── Admin Types ──────────────────────────────────────────────
@@ -413,6 +419,9 @@ export const adminApi = {
     const qs = params ? "?" + new URLSearchParams(params).toString() : "";
     return request<{ workers: AdminWorker[]; pagination: AdminPagination }>(`/admin/workers${qs}`, "GET");
   },
+
+  getWorkerById: (id: string) =>
+    request<{ worker: AdminWorker; recentBookings: AdminBooking[]; recentReviews: any[] }>(`/admin/workers/${id}`, "GET"),
 
   toggleElite: (id: string) =>
     request<{ isElite: boolean }>(`/admin/workers/${id}/elite`, "PATCH"),

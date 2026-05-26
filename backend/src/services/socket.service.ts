@@ -1,6 +1,8 @@
 import { Server, Socket } from "socket.io";
 import { Server as HttpServer } from "http";
 import Message from "../models/Message.model";
+import ChatRoom from "../models/ChatRoom.model";
+import User from "../models/User.model";
 import Job from "../models/Booking.model";
 
 export class SocketService {
@@ -27,32 +29,71 @@ export class SocketService {
         console.log(`[Socket.io] Client ${socket.id} joined room: ${jobId}`);
       });
 
+      // Join a user-specific room for notifications
+      socket.on("join_user", (userId: string) => {
+        socket.join(`user_${userId}`);
+        console.log(`[Socket.io] Client ${socket.id} joined user room: user_${userId}`);
+      });
+
       // Handle sending a message
       socket.on("send_message", async (data: {
         jobId: string;
         senderId: string;
-        senderModel: "User" | "Worker";
-        text: string;
+        senderRole: "client" | "worker";
+        message: string;
+        messageType?: "text" | "image";
       }) => {
         try {
-          const { jobId, senderId, senderModel, text } = data;
+          const { jobId, senderId, senderRole, message, messageType = "text" } = data;
           
-          if (!jobId || !senderId || !text) return;
+          if (!jobId || !senderId || !message) return;
 
-          // Validate job exists
-          const job = await Job.findById(jobId);
-          if (!job) return;
+          // Validate room exists and is not locked
+          const chatRoom = await ChatRoom.findOne({ bookingId: jobId });
+          if (!chatRoom) return;
+          if (chatRoom.isLocked) {
+            socket.emit("error", { message: "Chat room is locked" });
+            return;
+          }
 
           // Save to database
           const newMessage = await Message.create({
-            job: jobId,
-            sender: senderId,
-            senderModel,
-            text,
+            roomId: chatRoom._id,
+            senderId,
+            senderRole,
+            message,
+            messageType,
           });
+
+          // Update chat room last message
+          chatRoom.lastMessage = message;
+          chatRoom.lastMessageAt = new Date();
+          await chatRoom.save();
 
           // Broadcast to everyone in the room
           this.io.to(jobId).emit("receive_message", newMessage);
+
+          // Find the recipient and emit a message_notification to their user room
+          const job = await Job.findById(jobId).populate("worker");
+          if (job) {
+            let recipientId: string;
+            if (senderRole === "client") {
+              const workerObj = job.worker as any;
+              recipientId = workerObj.user ? workerObj.user.toString() : workerObj.toString();
+            } else {
+              recipientId = job.client.toString();
+            }
+
+            const senderUser = await User.findById(senderId);
+            const senderName = senderUser ? senderUser.name : (senderRole === "client" ? "Client" : "Worker");
+
+            this.io.to(`user_${recipientId}`).emit("message_notification", {
+              jobId,
+              senderName,
+              message,
+              createdAt: newMessage.createdAt,
+            });
+          }
         } catch (error) {
           console.error("[Socket.io] Error sending message:", error);
         }

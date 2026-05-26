@@ -1,34 +1,44 @@
 import mongoose, { Schema, Document } from "mongoose";
 
 export interface IMessage extends Document {
-  job: mongoose.Types.ObjectId;
-  sender: mongoose.Types.ObjectId;
-  senderModel: "User" | "Worker";
-  text: string;
+  roomId: mongoose.Types.ObjectId;
+  senderId: mongoose.Types.ObjectId;
+  senderRole: "client" | "worker";
+  message: string;
+  messageType: "text" | "image";
+  isRead: boolean;
   createdAt: Date;
   updatedAt: Date;
 }
 
 const MessageSchema = new Schema(
   {
-    job: {
+    roomId: {
       type: Schema.Types.ObjectId,
-      ref: "Job",
+      ref: "ChatRoom",
       required: true,
     },
-    sender: {
+    senderId: {
       type: Schema.Types.ObjectId,
       required: true,
-      refPath: "senderModel", // dynamically reference either User or Worker
     },
-    senderModel: {
+    senderRole: {
       type: String,
       required: true,
-      enum: ["User", "Worker"],
+      enum: ["client", "worker"],
     },
-    text: {
+    message: {
       type: String,
       required: true,
+    },
+    messageType: {
+      type: String,
+      enum: ["text", "image"],
+      default: "text",
+    },
+    isRead: {
+      type: Boolean,
+      default: false,
     },
   },
   { timestamps: true }

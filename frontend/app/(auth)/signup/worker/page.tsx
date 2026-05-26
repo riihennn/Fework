@@ -37,37 +37,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, useSession, signOut } from "next-auth/react";
 import { useAuthStore } from "@/store/authStore";
 
-const AVAILABLE_SKILLS = [
-  "Electrician",
-  "Plumber",
-  "AC Technician",
-  "TV Repair Technician",
-  "Refrigerator Technician",
-  "Washing Machine Technician",
-  "Water Purifier Technician",
-  "Generator Technician",
-  "CCTV Installer",
-  "Solar Panel Technician",
-  "Internet/WiFi Technician",
-  "Mobile Repair Technician",
-  "Computer Technician",
-  "Carpenter",
-  "Mason",
-  "Tiles Worker",
-  "Painter",
-  "Welder",
-  "Steel Fabricator",
-  "False Ceiling Worker",
-  "Interior Designer",
-  "POP Worker",
-  "Glass Installer",
-  "Roofing Worker",
-  "House Cleaner",
-  "Deep Cleaning Worker",
-  "Bathroom Cleaner",
-  "Gardener",
-  "Tree Cutter"
-];
+// Skills are fetched from API — see useEffect inside WorkerSignupForm
 
 const KERALA_DISTRICTS = [
   "Alappuzha",
@@ -96,6 +66,24 @@ function WorkerSignupForm() {
   const { register, googleLogin, isLoading, error, clearError } = useAuthStore();
   const { data: session, status } = useSession();
   const [step, setStep] = useState(1);
+
+  // Fetch available skills from API
+  const [availableSkills, setAvailableSkills] = useState<string[]>([]);
+  useEffect(() => {
+    const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
+    fetch(`${API}/skills`)
+      .then((r) => r.json())
+      .then((json) => {
+        if (json?.data?.skills) {
+          const names: string[] = json.data.skills
+            .filter((s: any) => s.isActive !== false)
+            .map((s: any) => s.name as string)
+            .sort();
+          setAvailableSkills(names);
+        }
+      })
+      .catch(() => {});
+  }, []);
 
   // Form State
   const [formData, setFormData] = useState({
@@ -193,7 +181,7 @@ function WorkerSignupForm() {
     };
   }, []);
 
-  const filteredSkills = AVAILABLE_SKILLS.filter(
+  const filteredSkills = availableSkills.filter(
     (skill) =>
       skill.toLowerCase().includes(skillInput.toLowerCase()) &&
       !formData.skills.includes(skill)
@@ -237,7 +225,7 @@ function WorkerSignupForm() {
       if (showSuggestions && filteredSkills[activeSuggestionIndex]) {
         addSkill(filteredSkills[activeSuggestionIndex]);
       } else if (skillInput.trim()) {
-        const exactMatch = AVAILABLE_SKILLS.find(
+        const exactMatch = availableSkills.find(
           (s) => s.toLowerCase() === skillInput.trim().toLowerCase()
         );
         if (exactMatch) {

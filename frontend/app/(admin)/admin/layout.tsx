@@ -4,7 +4,7 @@ import React, { useState } from "react";
 import { useRouter, usePathname } from "next/navigation";
 import { useAuthStore } from "@/store/authStore";
 import Link from "next/link";
-import { LayoutDashboard, Users, Briefcase, Calendar, LogOut, Menu, LifeBuoy } from "lucide-react";
+import { LayoutDashboard, Users, Briefcase, Calendar, LogOut, Menu, LifeBuoy, Layers } from "lucide-react";
 
 const NAV = [
   { href: "/admin", label: "Overview", icon: LayoutDashboard, exact: true },
@@ -12,6 +12,7 @@ const NAV = [
   { href: "/admin/workers", label: "Workers", icon: Briefcase },
   { href: "/admin/bookings", label: "Bookings", icon: Calendar },
   { href: "/admin/tickets", label: "Tickets", icon: LifeBuoy },
+  { href: "/admin/skills", label: "Skills CMS", icon: Layers },
 ];
 
 export default function AdminLayout({ children }: { children: React.ReactNode }) {

@@ -2,9 +2,10 @@
 
 import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
-import { X, Send, Loader2, ArrowLeft, CheckCheck, User } from "lucide-react";
+import { X, Send, Loader2, ArrowLeft, CheckCheck, User, MoreVertical } from "lucide-react";
 import { io, Socket } from "socket.io-client";
 import { messageApi, ChatMessage, API_BASE_URL } from "../../services/api";
+import { useNotificationStore } from "../../store/notificationStore";
 
 interface ChatBoxProps {
   isOpen: boolean;
@@ -14,6 +15,7 @@ interface ChatBoxProps {
   currentUserModel: "User" | "Worker";
   jobTitle: string;
   isInline?: boolean;
+  readOnly?: boolean;
 }
 
 // Group messages by date
@@ -43,16 +45,30 @@ export default function ChatBox({
   currentUserModel,
   jobTitle,
   isInline = false,
+  readOnly = false,
 }: ChatBoxProps) {
   const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(true);
+  const [showMenu, setShowMenu] = useState(false);
   const socketRef = useRef<Socket | null>(null);
   const messagesEndRef = useRef<HTMLDivElement>(null);
+  
+  const { setActiveChatRoomId } = useNotificationStore();
 
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: "smooth" });
   }, [messages]);
+
+  useEffect(() => {
+    if (!isOpen) return;
+
+    setActiveChatRoomId(jobId);
+
+    return () => {
+      setActiveChatRoomId(null);
+    };
+  }, [isOpen, jobId, setActiveChatRoomId]);
 
   useEffect(() => {
     if (!isOpen) return;
@@ -98,11 +114,21 @@ export default function ChatBox({
     socketRef.current.emit("send_message", {
       jobId,
       senderId: currentUserId,
-      senderModel: currentUserModel,
-      text: input.trim(),
+      senderRole: currentUserModel === "User" ? "client" : "worker",
+      message: input.trim(),
     });
 
     setInput("");
+  };
+
+  const handleClearChat = async () => {
+    try {
+      await messageApi.clearChat(jobId);
+      setMessages([]);
+      setShowMenu(false);
+    } catch (error) {
+      console.error("Failed to clear chat", error);
+    }
   };
 
   const groups = groupByDate(messages);
@@ -117,7 +143,7 @@ export default function ChatBox({
               animate={{ opacity: 1 }}
               exit={{ opacity: 0 }}
               onClick={onClose}
-              className="fixed inset-0 z-[9998] bg-black/30 backdrop-blur-[2px]"
+              className="fixed inset-0 z-[9998] bg-black/50"
             />
           )}
 
@@ -125,7 +151,7 @@ export default function ChatBox({
             initial={isInline ? { opacity: 0 } : { x: "100%" }}
             animate={isInline ? { opacity: 1 } : { x: 0 }}
             exit={isInline ? { opacity: 0 } : { x: "100%" }}
-            transition={isInline ? { duration: 0.2 } : { type: "spring", damping: 28, stiffness: 220 }}
+            transition={{ type: "tween", duration: 0.25, ease: "easeOut" }}
             className={
               isInline
                 ? "flex flex-col w-full h-full bg-white relative"
@@ -146,6 +172,24 @@ export default function ChatBox({
               <div className="flex-1 min-w-0">
                 <h3 className="font-semibold text-[#0F172A] truncate leading-tight">{jobTitle || "Chat"}</h3>
                 <p className="text-[11px] text-teal-500 font-medium">active now</p>
+              </div>
+              <div className="relative">
+                <button
+                  onClick={() => setShowMenu(!showMenu)}
+                  className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100 transition-all"
+                >
+                  <MoreVertical size={20} className="text-gray-500" />
+                </button>
+                {showMenu && (
+                  <div className="absolute top-10 right-0 bg-white border border-gray-100 shadow-lg rounded-xl py-2 w-40 z-[9992]">
+                    <button
+                      onClick={handleClearChat}
+                      className="w-full text-left px-4 py-2 text-sm text-red-500 hover:bg-red-50 font-medium transition-colors"
+                    >
+                      Clear Chat
+                    </button>
+                  </div>
+                )}
               </div>
             </div>
 
@@ -173,7 +217,7 @@ export default function ChatBox({
                     </div>
 
                     {group.messages.map((msg, idx) => {
-                      const isMe = msg.sender === currentUserId;
+                      const isMe = msg.senderId === currentUserId;
                       const time = new Date(msg.createdAt).toLocaleTimeString([], {
                         hour: "2-digit",
                         minute: "2-digit",
@@ -190,15 +234,13 @@ export default function ChatBox({
                             }`}
                           >
                             <div className="leading-relaxed break-words">
-                              {msg.text}
-                              {/* Invisible spacer so text doesn't overlap the absolute positioned time/tick */}
-                              <span className="inline-block w-[48px] h-1"></span>
-                            </div>
-                            <div className="absolute bottom-0.5 right-1.5 flex items-center gap-0.5 text-[10px] text-gray-400 font-medium tracking-tight">
-                              <span>{time}</span>
-                              {isMe && (
-                                <CheckCheck size={14} className="text-gray-400" />
-                              )}
+                              <span>{msg.message}</span>
+                              <span className="inline-flex items-center gap-0.5 ml-3 mt-1 relative top-[1px] text-[10px] text-gray-400 font-medium tracking-tight whitespace-nowrap align-bottom">
+                                {time}
+                                {isMe && (
+                                  <CheckCheck size={14} className="text-gray-400" />
+                                )}
+                              </span>
                             </div>
                           </div>
                         </div>
@@ -211,24 +253,32 @@ export default function ChatBox({
             </div>
 
             {/* Input Area */}
-            <div className="p-3 bg-white border-t border-gray-100 shrink-0 flex items-center gap-2">
-              <form onSubmit={handleSend} className="flex-1 flex items-center gap-2">
-                <input
-                  type="text"
-                  value={input}
-                  onChange={(e) => setInput(e.target.value)}
-                  placeholder="Type a message"
-                  className="flex-1 h-12 bg-gray-50 border border-gray-200 rounded-full pl-5 pr-4 text-sm focus:outline-none focus:border-teal-400 focus:bg-white transition-all font-medium placeholder:text-gray-400"
-                />
-                <button
-                  type="submit"
-                  disabled={!input.trim()}
-                  className="w-12 h-12 flex items-center justify-center bg-teal-500 text-white rounded-full hover:bg-teal-600 transition-all disabled:opacity-40 shadow-md shrink-0"
-                >
-                  <Send size={18} className="ml-0.5" />
-                </button>
-              </form>
-            </div>
+            {!readOnly ? (
+              <div className="p-3 bg-white border-t border-gray-100 shrink-0 flex items-center gap-2">
+                <form onSubmit={handleSend} className="flex-1 flex items-center gap-2">
+                  <input
+                    type="text"
+                    value={input}
+                    onChange={(e) => setInput(e.target.value)}
+                    placeholder="Type a message"
+                    className="flex-1 h-12 bg-gray-50 border border-gray-200 rounded-full pl-5 pr-4 text-sm focus:outline-none focus:border-teal-400 focus:bg-white transition-all font-medium placeholder:text-gray-400"
+                  />
+                  <button
+                    type="submit"
+                    disabled={!input.trim()}
+                    className="w-12 h-12 flex items-center justify-center bg-teal-500 text-white rounded-full hover:bg-teal-600 transition-all disabled:opacity-40 shadow-md shrink-0"
+                  >
+                    <Send size={18} className="ml-0.5" />
+                  </button>
+                </form>
+              </div>
+            ) : (
+              <div className="p-4 bg-gray-50 border-t border-gray-100 shrink-0 flex justify-center text-center">
+                <span className="text-sm font-bold text-gray-500 bg-white px-4 py-2 rounded-full border border-gray-200 shadow-sm">
+                  This job is completed. Chat is closed.
+                </span>
+              </div>
+            )}
           </motion.div>
         </>
       )}

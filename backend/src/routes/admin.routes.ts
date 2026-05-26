@@ -7,6 +7,7 @@ import {
   deleteUser,
   toggleBlockUser,
   getWorkers,
+  getWorkerById,
   toggleElite,
   getBookings,
   updateBookingStatus,
@@ -27,6 +28,7 @@ router.patch("/users/:id/block", toggleBlockUser);
 
 // ── Workers ────────────────────────────────────────────────────
 router.get("/workers", getWorkers);
+router.get("/workers/:id", getWorkerById);
 router.patch("/workers/:id/elite", toggleElite);
 
 // ── Bookings ───────────────────────────────────────────────────

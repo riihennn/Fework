@@ -3,6 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { adminApi, AdminWorker } from "@/services/api";
 import { Search, MapPin, Briefcase, Star, Award, X } from "lucide-react";
+import Link from "next/link";
 
 export default function AdminWorkersPage() {
   const [workers, setWorkers] = useState<AdminWorker[]>([]);
@@ -79,7 +80,7 @@ export default function AdminWorkersPage() {
       ) : (
         <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-6">
           {workers.map((w) => (
-            <div key={w._id} className="relative bg-white border border-gray-100 rounded-[32px] p-6 flex flex-col shadow-sm hover:shadow-xl hover:border-gray-200 transition-all group overflow-hidden">
+            <Link href={`/admin/workers/${w._id}`} key={w._id} className="relative bg-white border border-gray-100 rounded-[32px] p-6 flex flex-col shadow-sm hover:shadow-xl hover:border-gray-200 transition-all group overflow-hidden">
               {/* Elite Ribbon */}
               {w.isElite && (
                 <div className="absolute top-4 right-4 bg-amber-50 text-amber-600 border border-amber-200 px-3 py-1 rounded-full flex items-center gap-1 shadow-sm">
@@ -139,7 +140,7 @@ export default function AdminWorkersPage() {
                   Since {fmt(w.createdAt)}
                 </div>
                 <button
-                  onClick={() => handleToggleElite(w._id)}
+                  onClick={(e) => { e.preventDefault(); handleToggleElite(w._id); }}
                   disabled={togglingId === w._id}
                   className={`px-4 py-2 rounded-xl text-xs font-bold transition-all ${w.isElite
                       ? "bg-rose-50 text-rose-600 hover:bg-rose-100"
@@ -149,7 +150,7 @@ export default function AdminWorkersPage() {
                   {togglingId === w._id ? "..." : w.isElite ? "Revoke Elite" : "Make Elite"}
                 </button>
               </div>
-            </div>
+            </Link>
           ))}
         </div>
       )}

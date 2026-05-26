@@ -4,6 +4,7 @@ import { sendSuccess, sendError } from "../utils/response.utils";
 import User from "../models/User.model";
 import Worker from "../models/Worker.model";
 import Job from "../models/Booking.model";
+import Review from "../models/Review.model";
 
 // ── GET /api/admin/stats ──────────────────────────────────────
 export const getStats = async (_req: AuthRequest, res: Response): Promise<void> => {
@@ -252,6 +253,43 @@ export const getWorkers = async (req: AuthRequest, res: Response): Promise<void>
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to fetch workers.";
+    sendError(res, message, 500);
+  }
+};
+
+// ── GET /api/admin/workers/:id ────────────────────────────────
+export const getWorkerById = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const worker = await Worker.findById(req.params.id).populate("user", "-password").lean();
+    if (!worker) {
+      sendError(res, "Worker not found.", 404);
+      return;
+    }
+    
+    // Fetch recent bookings for this worker
+    const recentBookings = await Job.find({ worker: worker._id })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .populate("client", "name email avatar")
+      .lean();
+
+    // Fetch recent reviews for this worker
+    const recentReviews = await Review.find({ worker: worker._id })
+      .sort({ createdAt: -1 })
+      .limit(10)
+      .populate("client", "name email avatar")
+      .lean();
+
+    sendSuccess(res, "Worker fetched successfully.", {
+      worker: {
+        ...worker,
+        userInfo: worker.user, // normalize for frontend
+      },
+      recentBookings,
+      recentReviews,
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to fetch worker details.";
     sendError(res, message, 500);
   }
 };

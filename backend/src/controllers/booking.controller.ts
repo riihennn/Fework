@@ -1,9 +1,13 @@
 import { Response, NextFunction } from "express";
 import { AuthRequest } from "../types";
-import Job from "../models/Booking.model";
 import Worker from "../models/Worker.model";
+import Job from "../models/Booking.model";
+import ChatRoom from "../models/ChatRoom.model";
 import { sseService } from "../services/sse.service";
 import { sendSuccess, sendError } from "../utils/response.utils";
+import Message from "../models/Message.model";
+import User from "../models/User.model";
+import { socketService } from "../app";
 
 /**
  * @desc    Client creates a booking request for a worker
@@ -40,11 +44,19 @@ export const createBooking = async (
       status: "pending",
     });
 
+    // Automatically create a ChatRoom for this booking
+    await ChatRoom.create({
+      bookingId: job._id,
+      clientId: job.client,
+      workerId: job.worker,
+    });
+
     // Populate client info for the SSE payload
     const populated = await job.populate("client", "name email avatar phone");
 
     // 🔔 Push real-time notification to the worker
-    sseService.sendToWorker(workerId, "new_booking", {
+    const workerUserId = (worker.user as any)?._id?.toString() || worker.user?.toString();
+    socketService.emitToRoom(`user_${workerUserId}`, "new_booking", {
       job: {
         id: job._id,
         client: (populated.client as any)?.name || "Unknown Client",
@@ -105,10 +117,44 @@ export const respondToBooking = async (
 
     // 🔔 Notify the client via SSE (future: when client SSE is implemented)
     // For now, also notify the worker's dashboard to refresh the job list
-    sseService.sendToWorker(worker._id.toString(), "booking_updated", {
+    const workerUserId = worker.user.toString();
+    socketService.emitToRoom(`user_${workerUserId}`, "booking_updated", {
       jobId: job._id,
       status: job.status,
     });
+    socketService.emitToRoom(`user_${job.client.toString()}`, "booking_updated", {
+      jobId: job._id,
+      status: job.status,
+    });
+
+    if (action === "accept") {
+      const chatRoom = await ChatRoom.findOne({ bookingId: job._id });
+      if (chatRoom) {
+        const welcomeMsg = await Message.create({
+          roomId: chatRoom._id,
+          senderId: req.user!.id,
+          senderRole: "worker",
+          message: "I have accepted your offer! I'm ready to get started. Let me know if you have any questions.",
+        });
+        
+        chatRoom.lastMessage = welcomeMsg.message;
+        chatRoom.lastMessageAt = welcomeMsg.createdAt;
+        await chatRoom.save();
+
+        socketService.emitToRoom(job._id.toString(), "receive_message", welcomeMsg);
+
+        // Find the worker's user name and emit a message notification to the client's user room
+        const senderUser = await User.findById(req.user!.id);
+        const senderName = senderUser ? senderUser.name : "Worker";
+
+        socketService.emitToRoom(`user_${job.client.toString()}`, "message_notification", {
+          jobId: job._id.toString(),
+          senderName,
+          message: welcomeMsg.message,
+          createdAt: welcomeMsg.createdAt,
+        });
+      }
+    }
 
     sendSuccess(res, `Booking ${action}ed successfully`, { status: job.status });
   } catch (error) {
@@ -171,7 +217,16 @@ export const updateJobStatus = async (
     if (workerNote) job.workerNote = workerNote;
     await job.save();
 
-    sseService.sendToWorker(worker._id.toString(), "booking_updated", {
+    if (status === "cancelled") {
+      await ChatRoom.updateOne({ bookingId: job._id }, { isLocked: true });
+    }
+
+    const workerUserId = worker.user.toString();
+    socketService.emitToRoom(`user_${workerUserId}`, "booking_updated", {
+      jobId: job._id,
+      status: job.status,
+    });
+    socketService.emitToRoom(`user_${job.client.toString()}`, "booking_updated", {
       jobId: job._id,
       status: job.status,
     });
@@ -213,10 +268,16 @@ export const approveJob = async (
       job.actualPay = actualPay || job.estimatedPay;
       job.clientApproval = { approved: true, note, approvedAt: new Date() };
 
+      await ChatRoom.updateOne({ bookingId: job._id }, { isLocked: true });
+
       const worker = await Worker.findById(job.worker);
       if (worker) {
         await Worker.findByIdAndUpdate(worker._id, { $inc: { totalJobs: 1 } });
-        sseService.sendToWorker(worker._id.toString(), "booking_updated", {
+        const workerUserId = worker.user.toString();
+        socketService.emitToRoom(`user_${workerUserId}`, "booking_updated", {
+          jobId: job._id, status: "completed",
+        });
+        socketService.emitToRoom(`user_${job.client.toString()}`, "booking_updated", {
           jobId: job._id, status: "completed",
         });
       }
@@ -226,7 +287,11 @@ export const approveJob = async (
 
       const worker = await Worker.findById(job.worker);
       if (worker) {
-        sseService.sendToWorker(worker._id.toString(), "booking_updated", {
+        const workerUserId = worker.user.toString();
+        socketService.emitToRoom(`user_${workerUserId}`, "booking_updated", {
+          jobId: job._id, status: "disputed",
+        });
+        socketService.emitToRoom(`user_${job.client.toString()}`, "booking_updated", {
           jobId: job._id, status: "disputed",
         });
       }
@@ -385,7 +450,12 @@ export const cancelBooking = async (
     // Notify worker
     const worker = await Worker.findById(job.worker);
     if (worker) {
-      sseService.sendToWorker(worker._id.toString(), "booking_updated", {
+      const workerUserId = worker.user.toString();
+      socketService.emitToRoom(`user_${workerUserId}`, "booking_updated", {
+        jobId: job._id,
+        status: "cancelled",
+      });
+      socketService.emitToRoom(`user_${job.client.toString()}`, "booking_updated", {
         jobId: job._id,
         status: "cancelled",
       });
@@ -445,7 +515,13 @@ export const rescheduleBooking = async (
     // Notify worker
     const worker = await Worker.findById(job.worker);
     if (worker) {
-      sseService.sendToWorker(worker._id.toString(), "booking_updated", {
+      const workerUserId = worker.user.toString();
+      socketService.emitToRoom(`user_${workerUserId}`, "booking_updated", {
+        jobId: job._id,
+        status: job.status,
+        scheduledAt: newDate,
+      });
+      socketService.emitToRoom(`user_${job.client.toString()}`, "booking_updated", {
         jobId: job._id,
         status: job.status,
         scheduledAt: newDate,
