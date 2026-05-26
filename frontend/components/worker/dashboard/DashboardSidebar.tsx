@@ -12,6 +12,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { AuthUser } from "@/services/api";
+import Avatar from "@/components/shared/Avatar";
 
 interface NavLink {
   label: string;
@@ -67,9 +68,7 @@ export default function DashboardSidebar({
         {/* User Info */}
         <div className="px-6 py-6 mx-4 rounded-3xl bg-gray-50/50 border border-gray-100/50">
           <div className="flex items-center gap-4">
-            <div className="w-12 h-12 rounded-2xl bg-teal-500/10 flex items-center justify-center text-teal-600 font-black text-lg">
-              {user?.name?.[0]?.toUpperCase() ?? "W"}
-            </div>
+            <Avatar src={(user as any)?.avatar} name={user?.name} size={48} className="rounded-2xl" />
             <div>
               <div className="text-[#0F172A] font-black text-sm tracking-tight">{user?.name || "Worker"}</div>
               <div className="text-gray-400 text-[10px] font-black uppercase tracking-widest">{user?.role || "worker"}</div>

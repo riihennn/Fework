@@ -6,9 +6,11 @@ import {
   Briefcase, Clock, Loader2, MapPin, Calendar, RefreshCw,
   Zap, User, Banknote, CheckCircle2, AlertTriangle, FileText,
   Phone, Star, ChevronRight, X, XCircle, CalendarClock,
-  ChevronLeft
+  ChevronLeft, MessageSquare
 } from "lucide-react";
 import { bookingApi, reviewApi, BookingJob } from "@/services/api";
+import ChatBox from "@/components/shared/ChatBox";
+import { useAuthStore } from "@/store/authStore";
 
 // ─── Status Config ──────────────────────────────────────────────────────
 const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string; dot: string; desc: string }> = {
@@ -692,6 +694,16 @@ function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => voi
             </div>
           )}
 
+          {/* Chat Action */}
+          {["accepted", "in_progress", "awaiting_approval"].includes(job.status) && (
+            <div className="flex mb-4">
+              <button onClick={() => window.dispatchEvent(new CustomEvent("open-chat-client", { detail: { id: job._id, title: job.service } }))}
+                className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-teal-50 text-teal-600 border border-teal-100 text-sm font-bold hover:bg-teal-100 transition-all">
+                <MessageSquare size={16} /> Chat with Worker
+              </button>
+            </div>
+          )}
+
           {/* Payment */}
           <div className="flex items-center justify-between pt-4 border-t border-gray-50">
             <div>
@@ -736,6 +748,8 @@ export default function MyBookingsPage() {
   const [page, setPage] = useState(1);
   const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
+  const [activeChatJob, setActiveChatJob] = useState<{ id: string; title: string } | null>(null);
+  const { user } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
 
   const fetchJobs = useCallback(async (status: string, p: number) => {
@@ -750,6 +764,12 @@ export default function MyBookingsPage() {
   }, []);
 
   useEffect(() => { fetchJobs(activeStatus, page); }, [activeStatus, page, fetchJobs]);
+
+  useEffect(() => {
+    const handleOpenChat = (e: any) => setActiveChatJob(e.detail);
+    window.addEventListener("open-chat-client", handleOpenChat);
+    return () => window.removeEventListener("open-chat-client", handleOpenChat);
+  }, []);
 
   return (
     <div className="min-h-screen bg-[#f8f9fb]">
@@ -837,6 +857,15 @@ export default function MyBookingsPage() {
           </div>
         )}
       </main>
+
+      <ChatBox
+        isOpen={!!activeChatJob}
+        onClose={() => setActiveChatJob(null)}
+        jobId={activeChatJob?.id || ""}
+        jobTitle={activeChatJob?.title || ""}
+        currentUserId={user?._id || ""}
+        currentUserModel="User"
+      />
     </div>
   );
 }

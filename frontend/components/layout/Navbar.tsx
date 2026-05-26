@@ -6,6 +6,8 @@ import { Bell, UserCircle, LogOut, Briefcase, Settings, ChevronDown, Clock, Mess
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
+import GlobalChatDrawer from "../shared/GlobalChatDrawer";
+import Avatar from "../shared/Avatar";
 
 interface NavbarProps {
   className?: string;
@@ -16,6 +18,7 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
   const { isAuthenticated, logout, user } = useAuthStore();
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [isChatDrawerOpen, setIsChatDrawerOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
 
   const handleLogout = async () => {
@@ -35,6 +38,7 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
   }, []);
 
   return (
+    <>
     <nav className={`bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-50 ${className || ""}`}>
       <div className="flex items-center gap-12">
         <Link href="/" className="text-2xl font-bold text-[#0F172A] tracking-tight flex items-center gap-0.5">
@@ -52,13 +56,13 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
       <div className="flex items-center gap-2">
         {isAuthenticated && (
           <>
-            <Link
-              href={user?.role === "worker" ? "/worker/chats" : "/chats"}
+            <button
+              onClick={() => setIsChatDrawerOpen(true)}
               className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 relative transition-all active:scale-95 group"
             >
               <MessageSquare size={20} className="group-hover:text-[#0F172A] transition-colors" />
               <span className="absolute top-2.5 right-2.5 w-2 h-2 bg-teal-500 rounded-full border-2 border-white shadow-sm" />
-            </Link>
+            </button>
 
             <button className="h-10 w-10 flex items-center justify-center rounded-full hover:bg-gray-100 text-gray-600 relative transition-all active:scale-95 group">
               <Bell size={20} className="group-hover:text-[#0F172A] transition-colors" />
@@ -76,9 +80,7 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
               <div className="hidden md:flex flex-col items-end">
                 <span className="text-xs font-bold text-[#0F172A]">{user?.name || user?.email?.split("@")[0]}</span>
               </div>
-              <div className="h-9 w-9 flex items-center justify-center rounded-xl bg-gray-100 text-[#0F172A] border border-gray-200">
-                <UserCircle size={22} />
-              </div>
+              <Avatar src={(user as any)?.avatar} name={user?.name} size={36} className="rounded-xl border border-gray-200" />
               <ChevronDown size={14} className={`text-gray-400 transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""}`} />
             </button>
 
@@ -147,6 +149,14 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
         )}
       </div>
     </nav>
+    
+    {isAuthenticated && (
+      <GlobalChatDrawer 
+        isOpen={isChatDrawerOpen} 
+        onClose={() => setIsChatDrawerOpen(false)} 
+      />
+    )}
+    </>
   );
 };
 

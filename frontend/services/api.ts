@@ -310,6 +310,21 @@ export const reviewApi = {
     request<{ reviewed: boolean }>(`/reviews/check/${jobId}`, "GET"),
 };
 
+// ─── Message API ──────────────────────────────────────────
+export interface ChatMessage {
+  _id: string;
+  job: string;
+  sender: string;
+  senderModel: "User" | "Worker";
+  text: string;
+  createdAt: string;
+}
+
+export const messageApi = {
+  getMessages: (jobId: string) =>
+    request<ChatMessage[]>(`/messages/${jobId}`, "GET"),
+};
+
 // ─── Admin Types ──────────────────────────────────────────────
 export interface AdminStats {
   overview: {

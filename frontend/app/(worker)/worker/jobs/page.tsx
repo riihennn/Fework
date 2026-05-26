@@ -9,6 +9,9 @@ import {
 } from "lucide-react";
 import { bookingApi, BookingJob, JobStatus } from "@/services/api";
 import StatusErrorModal from "@/components/worker/dashboard/StatusErrorModal";
+import ChatBox from "@/components/shared/ChatBox";
+import Avatar from "@/components/shared/Avatar";
+import { useAuthStore } from "@/store/authStore";
 
 // ─── Status Config ─────────────────────────────────────────────────────
 const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string; dot: string }> = {
@@ -95,9 +98,11 @@ function LiveTimer({ startedAt }: { startedAt: string }) {
 
 // ─── Job Card ──────────────────────────────────────────────────────────
 function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
+  const { user } = useAuthStore();
   const [loading, setLoading] = useState<string | null>(null);
   const [showNoteModal, setShowNoteModal] = useState(false);
-  const [errorModal, setErrorModal] = useState<{ open: boolean; message: string }>({ open: false, message: "" });
+  const [errorModal, setErrorModal] = useState({ open: false, message: "" });
+  const [activeChatJob, setActiveChatJob] = useState<{ id: string; title: string } | null>(null);
   const meta = STATUS_META[job.status] || STATUS_META[""];
   const action = WORKER_ACTIONS[job.status];
   const clientInfo = job.client as { name: string; email: string; phone?: string };
@@ -117,6 +122,8 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
     finally { setLoading(null); }
   };
 
+  const showChat = ["accepted", "in_progress", "awaiting_approval"].includes(job.status);
+
   return (
     <>
       <motion.div layout initial={{ opacity: 0, y: 16 }} animate={{ opacity: 1, y: 0 }} exit={{ opacity: 0, y: -10 }}
@@ -130,9 +137,12 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
           <div className="flex items-start justify-between gap-4 mb-5">
             <div className="flex items-center gap-4">
               {/* Client avatar */}
-              <div className="w-12 h-12 rounded-2xl bg-[#0F172A] flex items-center justify-center text-teal-400 font-bold text-lg shrink-0">
-                {clientInfo?.name?.[0]?.toUpperCase() ?? <User size={20} />}
-              </div>
+              <Avatar
+                  src={(clientInfo as any)?.avatar}
+                  name={clientInfo?.name}
+                  size={48}
+                  className="rounded-2xl"
+                />
               <div>
                 <div className="font-bold text-[#0F172A] text-base">{clientInfo?.name || "Client"}</div>
                 <div className="text-xs text-gray-400 font-medium">{clientInfo?.email}</div>
@@ -269,6 +279,13 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
                 </>
               )}
 
+              {showChat && (
+                <button onClick={() => setActiveChatJob({ id: job._id, title: job.service })}
+                  className="h-10 px-4 rounded-xl bg-teal-50 border border-teal-100 text-xs font-bold text-teal-600 hover:bg-teal-100 hover:text-teal-700 transition-all flex items-center gap-1.5">
+                  <MessageSquare size={12} /> Chat
+                </button>
+              )}
+
               {action && (
                 <button
                   onClick={() => action.next === "awaiting_approval" ? setShowNoteModal(true) : handleAdvance("")}
@@ -287,7 +304,15 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
       <StatusErrorModal 
         isOpen={errorModal.open} 
         message={errorModal.message} 
-        onClose={() => setErrorModal({ ...errorModal, open: false })} 
+        onClose={() => setErrorModal({ open: false, message: "" })} 
+      />
+      <ChatBox
+        isOpen={!!activeChatJob}
+        onClose={() => setActiveChatJob(null)}
+        jobId={activeChatJob?.id || ""}
+        jobTitle={activeChatJob?.title || ""}
+        currentUserId={user?._id || ""}
+        currentUserModel="Worker"
       />
     </>
   );
@@ -314,7 +339,10 @@ export default function JobsPage() {
     finally { setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchJobs(activeStatus, page); }, [activeStatus, page, fetchJobs]);
+  useEffect(() => {
+    fetchJobs(activeStatus, page);
+  }, [fetchJobs, activeStatus, page]);
+
 
   return (
     <div className="max-w-5xl space-y-8">

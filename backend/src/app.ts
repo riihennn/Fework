@@ -13,8 +13,13 @@ import workerRoutes from "./routes/worker.routes";
 import bookingRoutes from "./routes/booking.routes";
 import reviewRoutes from "./routes/review.routes";
 import adminRoutes from "./routes/admin.routes";
+import messageRoutes from "./routes/message.routes";
+import http from "http";
+import { SocketService } from "./services/socket.service";
 
 const app = express();
+const server = http.createServer(app);
+export const socketService = new SocketService(server);
 const PORT = process.env.PORT || 5000;
 
 // ── Connect Database ─────────────────────────────────────────
@@ -44,6 +49,7 @@ app.use("/api/workers", workerRoutes);
 app.use("/api/bookings", bookingRoutes);
 app.use("/api/reviews", reviewRoutes);
 app.use("/api/admin", adminRoutes);
+app.use("/api/messages", messageRoutes);
 
 // ── 404 Handler ──────────────────────────────────────────────
 app.use((_req, res) => {
@@ -54,7 +60,7 @@ app.use((_req, res) => {
 app.use(errorHandler);
 
 // ── Start Server ─────────────────────────────────────────────
-app.listen(PORT, () => {
+server.listen(PORT, () => {
   console.log(`\n🚀 Fework API running on http://localhost:${PORT}`);
   console.log(`📌 Environment: ${process.env.NODE_ENV}`);
 });
