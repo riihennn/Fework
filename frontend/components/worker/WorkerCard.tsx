@@ -85,14 +85,14 @@ export default function WorkerCard({ worker }: { worker: WorkerPublic }) {
 
           {/* Experience */}
           <div className="flex flex-col items-center md:items-start border-l border-gray-100 pl-6">
-            <span className="text-base font-extrabold text-[#0F172A]">{worker.experience || "0"} Yrs</span>
-            <span className="text-[9px] text-gray-400 font-black uppercase tracking-widest">Experience</span>
+            <span className="text-[15px] font-extrabold text-gray-400">{worker.experience || "0"} Yrs</span>
+            <span className="text-[9px] text-gray-400  uppercase tracking-widest">Experience</span>
 
           </div>
 
           {/* Hourly Rate */}
           <div className="flex flex-col items-center md:items-start border-l border-gray-100 pl-6">
-            <span className="text-base font-extrabold text-[#0F172A]">₹ {worker.hourlyRate || "0"}</span>
+            <span className="text-[20px] font-extrabold text-[#0F172A]">₹ {worker.hourlyRate || "0"}</span>
             <span className="text-[9px] text-gray-400 font-black uppercase tracking-widest">Per Hour</span>
           </div>
         </div>
