@@ -3,6 +3,8 @@ import { z } from "zod";
 import * as authService from "../services/auth.service";
 import { sendSuccess, sendError } from "../utils/response.utils";
 import { AuthRequest, UserRole } from "../types";
+import User from "../models/User.model";
+
 
 // ── Validation Schemas ───────────────────────────────────────
 const registerSchema = z.object({
@@ -125,6 +127,29 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to fetch user.";
     sendError(res, message, 404);
+  }
+};
+
+// ── PATCH /api/auth/profile ──────────────────────────────────
+export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { avatar } = req.body;
+    const user = await User.findById(req.user!.id);
+    if (!user) { sendError(res, "User not found.", 404); return; }
+    if (avatar !== undefined) user.avatar = avatar;
+    await user.save();
+    sendSuccess(res, "Profile updated.", {
+      id: user._id,
+      name: user.name,
+      email: user.email,
+      role: user.role,
+      avatar: user.avatar,
+      phone: user.phone,
+      city: user.city,
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to update profile.";
+    sendError(res, message, 500);
   }
 };
 

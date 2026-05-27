@@ -41,6 +41,7 @@ export interface IWorker extends Document {
   totalJobs: number;
   isAvailable: boolean;
   isElite: boolean;
+  idProof?: string;
 }
 
 // ─── Job Document ─────────────────────────────────────────────

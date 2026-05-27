@@ -7,6 +7,7 @@ export interface AuthUser {
   email: string;
   role: "client" | "worker" | "admin";
   avatar?: string;
+  phone?: string;
   city?: string;
   address?: string;
   state?: string;
@@ -124,9 +125,13 @@ export const authApi = {
   me: () =>
     request<AuthUser>("/auth/me", "GET"),
 
+  updateProfile: (body: { avatar?: string }) =>
+    request<AuthUser>("/auth/profile", "PATCH", body),
+
   logout: () =>
     request<null>("/auth/logout", "POST"),
 };
+
 
 export interface EarningsData {
   summary: {

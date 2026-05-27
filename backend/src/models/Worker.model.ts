@@ -65,6 +65,10 @@ const WorkerSchema = new Schema<IWorker>(
       type: Boolean,
       default: false,
     },
+    idProof: {
+      type: String,
+      default: "",
+    },
   },
   {
     timestamps: true,

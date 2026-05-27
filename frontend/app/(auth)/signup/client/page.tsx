@@ -20,6 +20,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, useSession, signOut } from "next-auth/react";
 import { useAuthStore } from "@/store/authStore";
+import CloudinaryUpload from "@/components/shared/CloudinaryUpload";
 
 function ClientSignupForm() {
   const router = useRouter();
@@ -32,6 +33,7 @@ function ClientSignupForm() {
   const { data: session, status } = useSession();
   const [step, setStep] = useState(1);
   const [isLocating, setIsLocating] = useState(false);
+  const [avatar, setAvatar] = useState(""); // Cloudinary URL
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -156,7 +158,20 @@ function ClientSignupForm() {
         formData.state || undefined,
         formData.pincode || undefined
       );
-      router.push("/"); // Redirect to home after successful signup
+      // After registration, update avatar if one was uploaded
+      if (avatar) {
+        const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+        await fetch(`${API}/auth/profile`, {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ avatar }),
+        });
+        // Update in-memory auth store
+        const { user } = useAuthStore.getState();
+        if (user) useAuthStore.setState({ user: { ...user, avatar } });
+      }
+      router.push("/");
     } catch {
       // error is set in the store
     }
@@ -328,14 +343,17 @@ function ClientSignupForm() {
                       <p className="text-gray-500 text-sm">Tell us a bit more to personalize your experience.</p>
                     </div>
 
-                    <div className="flex justify-center mb-8">
-                      <div className="relative group cursor-pointer">
-                        <div className="w-24 h-24 rounded-3xl bg-gray-100 border-2 border-dashed border-gray-200 flex items-center justify-center text-gray-400 group-hover:bg-teal-50 group-hover:border-teal-200 transition-all">
-                          <Camera size={32} />
-                        </div>
-                        <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-teal-600 text-white rounded-xl flex items-center justify-center shadow-lg">
-                          <ArrowRight size={16} className="-rotate-90" />
-                        </div>
+                    <div className="flex justify-center mb-6">
+                      <div className="text-center">
+                        <CloudinaryUpload
+                          label=""
+                          sublabel=""
+                          currentUrl={avatar}
+                          onUpload={setAvatar}
+                          shape="circle"
+                          accept="image/*"
+                        />
+                        <p className="text-xs text-gray-400 mt-2 font-semibold">Profile Photo <span className="text-gray-300">(optional)</span></p>
                       </div>
                     </div>
 

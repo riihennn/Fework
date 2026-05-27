@@ -155,6 +155,20 @@ export default function AdminWorkerDetailsPage() {
               <span className="text-lg font-black text-[#0F172A]">₹{worker.hourlyRate}</span>
             </div>
           </div>
+
+          {(worker as any).idProof && (
+            <div className="bg-white rounded-3xl border border-gray-100 p-6 shadow-sm">
+              <h3 className="font-bold text-[#0F172A] mb-4">ID Proof</h3>
+              <a href={(worker as any).idProof} target="_blank" rel="noopener noreferrer" className="block">
+                <img
+                  src={(worker as any).idProof}
+                  alt="ID Proof"
+                  className="w-full rounded-2xl object-cover border border-gray-100 hover:opacity-90 transition-opacity"
+                />
+                <p className="text-xs text-teal-600 font-bold mt-2 text-center">Click to open full size</p>
+              </a>
+            </div>
+          )}
         </div>
 
         {/* Right Column: Recent Bookings */}

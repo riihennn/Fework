@@ -322,3 +322,50 @@ export const getWorkerEarnings = async (
     next(error);
   }
 };
+
+/**
+ * @desc    Update worker profile (avatar, idProof, and other fields)
+ * @route   PATCH /api/workers/profile
+ * @access  Private (Worker only)
+ */
+export const updateWorkerProfile = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const { avatar, idProof, bio, hourlyRate, experience, city, state, pincode, location } = req.body;
+
+    // Update User.avatar
+    if (avatar !== undefined) {
+      await User.findByIdAndUpdate(req.user!.id, { avatar });
+    }
+
+    // Update Worker fields
+    const workerUpdate: Record<string, unknown> = {};
+    if (idProof !== undefined) workerUpdate.idProof = idProof;
+    if (bio !== undefined) workerUpdate.bio = bio;
+    if (hourlyRate !== undefined) workerUpdate.hourlyRate = hourlyRate;
+    if (experience !== undefined) workerUpdate.experience = experience;
+    if (city !== undefined) workerUpdate.city = city;
+    if (state !== undefined) workerUpdate.state = state;
+    if (pincode !== undefined) workerUpdate.pincode = pincode;
+    if (location !== undefined) workerUpdate.location = location;
+
+    const worker = await Worker.findOneAndUpdate(
+      { user: req.user!.id },
+      { $set: workerUpdate },
+      { new: true }
+    );
+
+    if (!worker) {
+      return res.status(404).json({ success: false, message: "Worker profile not found" });
+    }
+
+    const user = await User.findById(req.user!.id).select("-password");
+
+    sendSuccess(res, "Profile updated", { worker, user });
+  } catch (error) {
+    next(error);
+  }
+};

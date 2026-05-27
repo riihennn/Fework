@@ -36,6 +36,7 @@ import {
 import { useRouter, useSearchParams } from "next/navigation";
 import { signIn, useSession, signOut } from "next-auth/react";
 import { useAuthStore } from "@/store/authStore";
+import CloudinaryUpload from "@/components/shared/CloudinaryUpload";
 
 // Skills are fetched from API — see useEffect inside WorkerSignupForm
 
@@ -110,6 +111,8 @@ function WorkerSignupForm() {
   const [activeSuggestionIndex, setActiveSuggestionIndex] = useState(0);
   const suggestionContainerRef = useRef<HTMLDivElement>(null);
   const [isLocating, setIsLocating] = useState(false);
+  const [avatar, setAvatar] = useState("");
+  const [idProof, setIdProof] = useState("");
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -310,6 +313,18 @@ function WorkerSignupForm() {
         formData.state,
         formData.pincode
       );
+      // After registration, update avatar/idProof if uploaded
+      if (avatar || idProof) {
+        const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+        await fetch(`${API}/workers/profile`, {
+          method: "PATCH",
+          credentials: "include",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ avatar: avatar || undefined, idProof: idProof || undefined }),
+        });
+        const { user } = useAuthStore.getState();
+        if (user && avatar) useAuthStore.setState({ user: { ...user, avatar } });
+      }
       router.push("/worker");
     } catch {
       // error shown from store
@@ -608,20 +623,22 @@ function WorkerSignupForm() {
                     </div>
 
                     <div className="grid grid-cols-2 gap-8 mb-8">
-                      <div className="space-y-2">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">Profile Photo</span>
-                        <div className="w-full h-32 rounded-[24px] bg-gray-50 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 hover:bg-teal-50 hover:border-teal-200 transition-all cursor-pointer">
-                          <Camera size={24} className="mb-2" />
-                          <span className="text-[10px] font-bold">Upload Photo</span>
-                        </div>
-                      </div>
-                      <div className="space-y-2">
-                        <span className="text-[10px] font-bold text-gray-400 uppercase tracking-widest ml-1">ID Proof</span>
-                        <div className="w-full h-32 rounded-[24px] bg-gray-50 border-2 border-dashed border-gray-200 flex flex-col items-center justify-center text-gray-400 hover:bg-teal-50 hover:border-teal-200 transition-all cursor-pointer">
-                          <Upload size={24} className="mb-2" />
-                          <span className="text-[10px] font-bold">Upload ID</span>
-                        </div>
-                      </div>
+                      <CloudinaryUpload
+                        label="Profile Photo"
+                        sublabel="Optional"
+                        currentUrl={avatar}
+                        onUpload={setAvatar}
+                        shape="circle"
+                        accept="image/*"
+                      />
+                      <CloudinaryUpload
+                        label="ID Proof"
+                        sublabel="Aadhaar / Licence / Passport (Optional)"
+                        currentUrl={idProof}
+                        onUpload={setIdProof}
+                        shape="square"
+                        accept="image/*,application/pdf"
+                      />
                     </div>
 
                     <div className="space-y-4">
