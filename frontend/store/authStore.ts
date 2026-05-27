@@ -26,6 +26,8 @@ interface AuthActions {
     state?: string,
     pincode?: string
   ) => Promise<void>;
+  sendSignupOTP: (email: string) => Promise<string>;
+  verifySignupOTP: (email: string, otp: string) => Promise<void>;
   logout: () => Promise<void>;
   restoreSession: () => Promise<void>;
   clearError: () => void;
@@ -64,6 +66,32 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         }
         set({ user: result.user, isAuthenticated: true, isLoading: false });
         return true;
+      },
+
+      // ── Pre-Registration OTP Flow ────────────────────────────────
+      sendSignupOTP: async (email) => {
+        set({ isLoading: true, error: null });
+        try {
+          const data = await authApi.sendSignupOTP(email);
+          set({ isLoading: false });
+          return data.message;
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : "Failed to send OTP.";
+          set({ error: msg, isLoading: false });
+          throw err;
+        }
+      },
+
+      verifySignupOTP: async (email, otp) => {
+        set({ isLoading: true, error: null });
+        try {
+          await authApi.verifySignupOTP(email, otp);
+          set({ isLoading: false });
+        } catch (err: unknown) {
+          const msg = err instanceof Error ? err.message : "OTP Verification failed.";
+          set({ error: msg, isLoading: false });
+          throw err;
+        }
       },
 
       // ── Register ───────────────────────────────────────────────

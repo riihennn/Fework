@@ -122,6 +122,12 @@ export const authApi = {
       name, email, password, role, phone, city, address, state, pincode, ...workerProfile,
     }),
 
+  sendSignupOTP: (email: string) =>
+    request<{ message: string }>("/auth/send-signup-otp", "POST", { email }),
+
+  verifySignupOTP: (email: string, otp: string) =>
+    request<{ message: string }>("/auth/verify-signup-otp", "POST", { email, otp }),
+
   me: () =>
     request<AuthUser>("/auth/me", "GET"),
 

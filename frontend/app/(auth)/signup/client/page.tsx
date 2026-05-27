@@ -29,11 +29,13 @@ function ClientSignupForm() {
   const defaultName = searchParams.get("name") || "";
   const isGoogleAuth = searchParams.get("googleAuth") === "true";
 
-  const { register, googleLogin, isLoading, error, clearError } = useAuthStore();
+  const { register, googleLogin, sendSignupOTP, verifySignupOTP, isLoading, error, clearError } = useAuthStore();
   const { data: session, status } = useSession();
   const [step, setStep] = useState(1);
   const [isLocating, setIsLocating] = useState(false);
   const [avatar, setAvatar] = useState(""); // Cloudinary URL
+  const [showOTP, setShowOTP] = useState(false);
+  const [otp, setOtp] = useState("");
 
   const handleGetCurrentLocation = () => {
     if (!navigator.geolocation) {
@@ -130,14 +132,25 @@ function ClientSignupForm() {
     }
   }, [isGoogleAuth, status, session, step]);
 
-  const handleNext = (e: React.FormEvent) => {
+  const handleNext = async (e: React.FormEvent) => {
     e.preventDefault();
     if (step === 1) {
       if (!isGoogleAuth && formData.password !== formData.confirmPassword) {
         alert("Passwords do not match!");
         return;
       }
-      setStep(2);
+      
+      // If not google auth, we must verify email via OTP before proceeding to Step 2
+      if (!isGoogleAuth) {
+        try {
+          await sendSignupOTP(formData.email);
+          setShowOTP(true);
+        } catch {
+          // error is handled by store
+        }
+      } else {
+        setStep(2);
+      }
     } else {
       handleComplete();
     }
@@ -146,6 +159,7 @@ function ClientSignupForm() {
   const handleComplete = async () => {
     clearError();
     try {
+      // User has already passed OTP or Google Auth, so register directly logs them in.
       await register(
         formData.fullName,
         formData.email,
@@ -158,6 +172,7 @@ function ClientSignupForm() {
         formData.state || undefined,
         formData.pincode || undefined
       );
+
       // After registration, update avatar if one was uploaded
       if (avatar) {
         const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
@@ -174,6 +189,28 @@ function ClientSignupForm() {
       router.push("/");
     } catch {
       // error is set in the store
+    }
+  };
+
+  const handleVerifyOTP = async (e: React.FormEvent) => {
+    e.preventDefault();
+    clearError();
+    try {
+      await verifySignupOTP(formData.email, otp);
+      setShowOTP(false);
+      setStep(2);
+    } catch {
+      // error set in store
+    }
+  };
+
+  const handleResendOTP = async () => {
+    clearError();
+    try {
+      const msg = await sendSignupOTP(formData.email);
+      alert(msg);
+    } catch {
+      // error set in store
     }
   };
 
@@ -223,6 +260,55 @@ function ClientSignupForm() {
               )}
             </AnimatePresence>
 
+            {showOTP ? (
+              <motion.div
+                initial={{ opacity: 0, scale: 0.95 }}
+                animate={{ opacity: 1, scale: 1 }}
+                className="text-center space-y-6"
+              >
+                <div className="mx-auto w-16 h-16 bg-teal-50 rounded-2xl flex items-center justify-center text-teal-600 mb-6">
+                  <Mail size={32} />
+                </div>
+                <h2 className="text-2xl font-bold text-[#0F172A]">Verify Your Email</h2>
+                <p className="text-gray-500 text-sm max-w-sm mx-auto">
+                  We've sent a 6-digit code to <span className="font-bold text-[#0F172A]">{formData.email}</span>. Please enter it below.
+                </p>
+
+                <form onSubmit={handleVerifyOTP} className="space-y-6 mt-8">
+                  <div className="flex justify-center">
+                    <input
+                      type="text"
+                      maxLength={6}
+                      placeholder="••••••"
+                      className="w-48 h-16 text-center text-3xl tracking-[0.5em] rounded-2xl border border-gray-200 bg-white font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all uppercase"
+                      value={otp}
+                      onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ""))}
+                    />
+                  </div>
+
+                  <button 
+                    disabled={isLoading || otp.length !== 6}
+                    className="w-full h-14 bg-[#0F172A] text-white rounded-2xl font-bold hover:bg-gray-800 transition-all shadow-lg shadow-gray-200 flex items-center justify-center gap-2 disabled:opacity-70"
+                  >
+                    {isLoading ? <Loader2 className="animate-spin" size={20} /> : "Verify Account"}
+                  </button>
+                </form>
+
+                <div className="pt-6">
+                  <p className="text-sm text-gray-500">
+                    Didn't receive the code?{" "}
+                    <button 
+                      type="button"
+                      onClick={handleResendOTP}
+                      disabled={isLoading}
+                      className="text-teal-600 font-bold hover:underline disabled:opacity-50"
+                    >
+                      Resend OTP
+                    </button>
+                  </p>
+                </div>
+              </motion.div>
+            ) : (
             <form onSubmit={handleNext}>
               <AnimatePresence mode="wait">
                 {step === 1 ? (
@@ -478,6 +564,7 @@ function ClientSignupForm() {
                 </button>
               </div>
             </form>
+            )}
 
             <div className="mt-8 text-center text-sm text-gray-500">
               Already have an account?{" "}

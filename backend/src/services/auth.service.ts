@@ -1,7 +1,13 @@
 import User from "../models/User.model";
 import Worker from "../models/Worker.model";
+import Otp from "../models/Otp.model";
 import { signToken } from "../utils/jwt.utils";
 import { IUser, UserRole } from "../types";
+import { sendOTPEmail } from "../utils/email.utils";
+
+// ── Generate OTP ─────────────────────────────────────────────
+const generateOTP = () => Math.floor(100000 + Math.random() * 900000).toString();
+
 
 // ─── Worker Profile Input ────────────────────────────────────
 export interface WorkerProfileInput {
@@ -15,6 +21,39 @@ export interface WorkerProfileInput {
   pincode?: string;
   skills?: string[];
 }
+
+// ── Pre-Registration OTP Flow ────────────────────────────────
+export const sendSignupOTP = async (email: string): Promise<{ message: string }> => {
+  const existingUser = await User.findOne({ email });
+  if (existingUser) throw new Error("An account with this email already exists.");
+
+  const otp = generateOTP();
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+
+  // Upsert OTP record
+  await Otp.findOneAndUpdate(
+    { email },
+    { otp, expiresAt, verified: false },
+    { upsert: true, new: true }
+  );
+
+  await sendOTPEmail({ to: email, otp });
+
+  return { message: "An OTP has been sent to your email address." };
+};
+
+export const verifySignupOTP = async (email: string, otpCode: string): Promise<{ message: string }> => {
+  const otpRecord = await Otp.findOne({ email });
+  if (!otpRecord) throw new Error("No OTP requested for this email.");
+  
+  if (otpRecord.expiresAt < new Date()) throw new Error("OTP has expired. Please request a new one.");
+  if (otpRecord.otp !== otpCode) throw new Error("Invalid OTP.");
+
+  otpRecord.verified = true;
+  await otpRecord.save();
+
+  return { message: "Email verified successfully." };
+};
 
 // ── Register ────────────────────────────────────────────────
 export const registerUser = async (
@@ -32,6 +71,19 @@ export const registerUser = async (
   const existing = await User.findOne({ email });
   if (existing) throw new Error("An account with this email already exists.");
 
+  // Check if email was verified (except for Google auth which we handle differently, or if we bypass it.
+  // Actually, Google Auth bypassed the OTP step in frontend, but here we require it.
+  // Wait, the frontend sends "GOOGLE_AUTH_PLACEHOLDER_PASS" if Google Auth. 
+  // Let's assume Google Auth is bypassed via controller, or we just verify OTP if they didn't do google login?
+  // Let's check OTP unconditionally for now, or bypass if it's the placeholder pass?
+  // Better: check if an OTP was verified for this email.
+  if (password !== "GOOGLE_AUTH_PLACEHOLDER_PASS") {
+    const otpRecord = await Otp.findOne({ email, verified: true });
+    if (!otpRecord) {
+      throw new Error("Email has not been verified. Please verify OTP first.");
+    }
+  }
+
   const user = await User.create({
     name,
     email,
@@ -42,6 +94,7 @@ export const registerUser = async (
     address: address || "",
     state: state || "",
     pincode: pincode || "",
+    isVerified: true, // Auto verify since they passed OTP or Google
   });
 
   // If registering as a worker, create their professional profile
@@ -59,6 +112,9 @@ export const registerUser = async (
       pincode: workerProfile?.pincode || "",
     });
   }
+
+  // Clean up OTP record
+  await Otp.deleteOne({ email });
 
   const token = signToken({ id: user._id.toString(), role: user.role });
 

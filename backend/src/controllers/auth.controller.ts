@@ -31,6 +31,17 @@ const loginSchema = z.object({
   password: z.string().min(1, "Password is required"),
 });
 
+const verifyOTPSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  otp: z.string().length(6, "OTP must be 6 digits"),
+});
+
+const sendSignupOTPSchema = z.object({
+  email: z.string().email("Invalid email address"),
+});
+
+
+
 const googleLoginSchema = z.object({
   email: z.string().email("Invalid email address"),
 });
@@ -69,11 +80,48 @@ export const register = async (req: Request, res: Response): Promise<void> => {
       pincode
     );
 
+    // We set the cookie and log the user in immediately since they passed OTP validation before calling register.
     res.cookie("token", result.token, cookieOptions);
-    res.cookie("user_role", result.user.role, { ...cookieOptions, httpOnly: false }); // non-httpOnly for middleware
+    res.cookie("user_role", result.user.role, { ...cookieOptions, httpOnly: false });
     sendSuccess(res, "Registration successful.", result, 201);
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Registration failed.";
+    sendError(res, message, 400);
+  }
+};
+
+// ── POST /api/auth/verify-otp ────────────────────────────────
+export const verifyOTP = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const parsed = verifyOTPSchema.safeParse(req.body);
+    if (!parsed.success) {
+      sendError(res, parsed.error.errors[0].message, 400);
+      return;
+    }
+    const { email, otp } = parsed.data;
+    const result = await authService.verifySignupOTP(email, otp);
+
+    sendSuccess(res, "Verification successful.", result);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Verification failed.";
+    sendError(res, message, 400);
+  }
+};
+
+// ── POST /api/auth/send-signup-otp ───────────────────────────
+export const sendSignupOTP = async (req: Request, res: Response): Promise<void> => {
+  try {
+    const parsed = sendSignupOTPSchema.safeParse(req.body);
+    if (!parsed.success) {
+      sendError(res, parsed.error.errors[0].message, 400);
+      return;
+    }
+    const { email } = parsed.data;
+    const result = await authService.sendSignupOTP(email);
+
+    sendSuccess(res, result.message, result);
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Resend OTP failed.";
     sendError(res, message, 400);
   }
 };

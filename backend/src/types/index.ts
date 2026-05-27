@@ -19,6 +19,8 @@ export interface IUser extends Document {
   pincode?: string;
   isVerified: boolean;
   isBlocked: boolean;
+  otp?: string;
+  otpExpiresAt?: Date;
   createdAt: Date;
   updatedAt: Date;
   comparePassword(candidatePassword: string): Promise<boolean>;
