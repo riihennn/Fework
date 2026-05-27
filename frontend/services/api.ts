@@ -39,6 +39,7 @@ export interface WorkerPublic {
   rating: number;
   totalJobs: number;
   isAvailable: boolean;
+  isElite?: boolean;
   user: { _id: string; name: string; email: string; avatar?: string };
 }
 

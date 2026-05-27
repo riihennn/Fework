@@ -48,7 +48,15 @@ export default function WorkerCard({ worker }: { worker: WorkerPublic }) {
 
       {/* Middle side: Details */}
       <div className="flex-1 text-center md:text-left flex flex-col justify-center">
-        <h3 className="text-2xl font-black text-[#0F172A] capitalize mb-0.5">{worker.user.name}</h3>
+        <div className="flex flex-col md:flex-row items-center gap-2 mb-0.5">
+          <h3 className="text-2xl font-black text-[#0F172A] capitalize">{worker.user.name}</h3>
+          {worker.isElite && (
+            <div className="flex items-center gap-1 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md border border-amber-200">
+              <Star size={10} className="fill-amber-500 text-amber-500" />
+              <span className="text-[10px] font-black uppercase tracking-widest">Elite</span>
+            </div>
+          )}
+        </div>
         <p className="text-sm font-bold text-gray-500 mb-2">{formatCategory(worker.category)}</p>
 
         <div className="flex items-center justify-center md:justify-start gap-1 text-[10px] text-gray-400 font-bold uppercase tracking-widest mb-6">

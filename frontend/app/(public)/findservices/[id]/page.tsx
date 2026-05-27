@@ -9,33 +9,10 @@ import {
   ShieldCheck
 } from "lucide-react";
 import Link from "next/link";
-import { workerApi } from "@/services/api";
+import { workerApi, reviewApi } from "@/services/api";
 import BookingPanel from "@/components/worker/BookingPanel";
 
-// ── Fake reviews for UI (Server rendered) ──────────────
-const FAKE_REVIEWS = [
-  {
-    initials: "RK",
-    name: "Rajan Kumar",
-    time: "2 weeks ago",
-    rating: 5,
-    text: "Exceptional work! Arrived on time, very professional and cleaned up perfectly after finishing. Highly recommend.",
-  },
-  {
-    initials: "PM",
-    name: "Priya Menon",
-    time: "1 month ago",
-    rating: 5,
-    text: "Fixed our leaking pipe in under an hour. Very knowledgeable and transparent about pricing. Will hire again.",
-  },
-  {
-    initials: "AS",
-    name: "Anil Suresh",
-    time: "2 months ago",
-    rating: 4,
-    text: "Good work overall. Completed the task efficiently. Minor delay but communicated well throughout.",
-  },
-];
+// Removed FAKE_REVIEWS
 
 function StarRow({ rating }: { rating: number }) {
   return (
@@ -61,9 +38,12 @@ export default async function WorkerProfilePage({ params }: PageProps) {
 
   let worker = null;
   let error = null;
+  let reviews: any[] = [];
 
   try {
     worker = await workerApi.getById(id);
+    const reviewsRes = await reviewApi.getWorkerReviews(worker._id);
+    reviews = reviewsRes?.reviews || [];
   } catch (e) {
     error = "Could not load this professional's profile.";
   }
@@ -118,14 +98,18 @@ export default async function WorkerProfilePage({ params }: PageProps) {
                       </span>
                     )}
                   </div>
-                  {worker.isAvailable && (
-                    <div className="absolute bottom-2 right-2 w-4 h-4 bg-teal-500 rounded-full border-2 border-white shadow" />
-                  )}
+
                 </div>
 
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-3 mb-2">
                     <h1 className="text-2xl font-black text-[#0F172A] tracking-tight">{worker.user.name}</h1>
+                    {worker.isElite && (
+                      <div className="flex items-center gap-1 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md border border-amber-200">
+                        <Star size={12} className="fill-amber-500 text-amber-500" />
+                        <span className="text-[10px] font-black uppercase tracking-widest mt-0.5">Elite</span>
+                      </div>
+                    )}
                     {avgRating && (
                       <div className="flex items-center gap-1 bg-amber-50 px-3 py-1 rounded-full">
                         <Star size={14} fill="#f59e0b" stroke="#f59e0b" />
@@ -147,11 +131,7 @@ export default async function WorkerProfilePage({ params }: PageProps) {
                     <span className="flex items-center gap-1 px-3 py-1 bg-gray-50 text-gray-500 rounded-xl text-[10px] font-black uppercase tracking-wider">
                       <MapPin size={11} /> {worker.city}{worker.state ? `, ${worker.state}` : ""}
                     </span>
-                    {worker.isAvailable && (
-                      <span className="flex items-center gap-1 px-3 py-1 bg-green-50 text-green-600 rounded-xl text-[10px] font-black uppercase tracking-wider">
-                        <Clock size={11} /> Available Now
-                      </span>
-                    )}
+
                   </div>
                 </div>
               </div>
@@ -210,23 +190,37 @@ export default async function WorkerProfilePage({ params }: PageProps) {
                 <h2 className="text-xs font-black text-gray-400 uppercase tracking-widest">Customer Reviews</h2>
               </div>
               <div className="space-y-6">
-                {FAKE_REVIEWS.map((r, i) => (
-                  <div key={i} className={`pb-6 ${i < FAKE_REVIEWS.length - 1 ? "border-b border-gray-50" : ""}`}>
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
-                        <div className="w-9 h-9 rounded-full bg-[#0F172A] flex items-center justify-center text-white text-[10px] font-black shrink-0">
-                          {r.initials}
+                {reviews.length === 0 ? (
+                  <p className="text-sm font-bold text-gray-400 py-4 text-center">No reviews yet.</p>
+                ) : (
+                  reviews.map((r: any, i: number) => {
+                    const clientName = (r.client as any)?.name || "Unknown";
+                    const clientInitials = clientName.substring(0, 2).toUpperCase();
+                    const formattedDate = new Date(r.createdAt).toLocaleDateString("en-US", { year: 'numeric', month: 'short', day: 'numeric' });
+
+                    return (
+                      <div key={r._id || i} className={`pb-6 ${i < reviews.length - 1 ? "border-b border-gray-50" : ""}`}>
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            { (r.client as any)?.avatar ? (
+                               <img src={(r.client as any).avatar} alt={clientName} className="w-9 h-9 rounded-full object-cover shrink-0" />
+                            ) : (
+                               <div className="w-9 h-9 rounded-full bg-[#0F172A] flex items-center justify-center text-white text-[10px] font-black shrink-0">
+                                 {clientInitials}
+                               </div>
+                            )}
+                            <div>
+                              <div className="text-sm font-black text-[#0F172A]">{clientName}</div>
+                              <div className="text-[10px] text-gray-400 font-bold">{formattedDate}</div>
+                            </div>
+                          </div>
+                          <StarRow rating={r.rating} />
                         </div>
-                        <div>
-                          <div className="text-sm font-black text-[#0F172A]">{r.name}</div>
-                          <div className="text-[10px] text-gray-400 font-bold">{r.time}</div>
-                        </div>
+                        <p className="text-sm text-gray-500 leading-relaxed pl-12">"{r.comment}"</p>
                       </div>
-                      <StarRow rating={r.rating} />
-                    </div>
-                    <p className="text-sm text-gray-500 leading-relaxed pl-12">"{r.text}"</p>
-                  </div>
-                ))}
+                    );
+                  })
+                )}
               </div>
             </div>
 
