@@ -241,7 +241,7 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
                     )}
 
                     <Link
-                      href="#"
+                      href="/settings"
                       className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 hover:text-[#0F172A] rounded-xl transition-all"
                       onClick={() => setIsDropdownOpen(false)}
                     >

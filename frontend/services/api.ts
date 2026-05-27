@@ -123,7 +123,7 @@ export const authApi = {
     }),
 
   sendSignupOTP: (email: string) =>
-    request<{ message: string }>("/auth/send-signup-otp", "POST", { email }),
+    request<{ message: string; otp?: string }>("/auth/send-signup-otp", "POST", { email }),
 
   verifySignupOTP: (email: string, otp: string) =>
     request<{ message: string }>("/auth/verify-signup-otp", "POST", { email, otp }),
@@ -131,8 +131,19 @@ export const authApi = {
   me: () =>
     request<AuthUser>("/auth/me", "GET"),
 
-  updateProfile: (body: { avatar?: string }) =>
+  updateProfile: (body: { 
+    avatar?: string;
+    name?: string;
+    phone?: string;
+    city?: string;
+    address?: string;
+    state?: string;
+    pincode?: string;
+  }) =>
     request<AuthUser>("/auth/profile", "PATCH", body),
+    
+  changePassword: (body: { currentPassword?: string, newPassword?: string }) =>
+    request<{ message: string }>("/auth/change-password", "PATCH", body),
 
   logout: () =>
     request<null>("/auth/logout", "POST"),

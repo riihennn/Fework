@@ -280,7 +280,7 @@ function ClientSignupForm() {
                       type="text"
                       maxLength={6}
                       placeholder="••••••"
-                      className="w-48 h-16 text-center text-3xl tracking-[0.5em] rounded-2xl border border-gray-200 bg-white font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all uppercase"
+                      className="w-64 h-16 text-center text-3xl tracking-[0.5em] rounded-2xl border border-gray-200 bg-white text-gray-900 font-bold focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all uppercase"
                       value={otp}
                       onChange={(e) => setOtp(e.target.value.replace(/[^0-9]/g, ""))}
                     />

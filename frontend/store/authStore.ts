@@ -74,6 +74,9 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         try {
           const data = await authApi.sendSignupOTP(email);
           set({ isLoading: false });
+          if (data.otp) {
+            alert(`[TEST MODE] Your OTP is: ${data.otp}`);
+          }
           return data.message;
         } catch (err: unknown) {
           const msg = err instanceof Error ? err.message : "Failed to send OTP.";

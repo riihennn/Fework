@@ -57,8 +57,8 @@ export default function GlobalChatDrawer({ isOpen: propIsOpen, onClose: propOnCl
 
       for (const job of activeJobs) {
         const otherPartyId = user.role === "worker"
-          ? (typeof job.client === 'object' ? (job.client as any)._id : job.client)
-          : (typeof job.worker === 'object' ? (job.worker as any).user?._id || (job.worker as any)._id : job.worker);
+          ? (job.client && typeof job.client === 'object' ? (job.client as any)._id : job.client)
+          : (job.worker && typeof job.worker === 'object' ? (job.worker as any).user?._id || (job.worker as any)._id : job.worker);
 
         if (otherPartyId && !seenUsers.has(otherPartyId)) {
           seenUsers.add(otherPartyId);

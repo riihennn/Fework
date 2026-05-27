@@ -1,5 +1,5 @@
 import { Router } from "express";
-import { register, login, googleLogin, getMe, logout, updateProfile, verifyOTP, sendSignupOTP } from "../controllers/auth.controller";
+import { register, login, googleLogin, getMe, logout, updateProfile, changePassword, verifyOTP, sendSignupOTP } from "../controllers/auth.controller";
 import { requireAuth } from "../middleware/auth.middleware";
 
 const router = Router();
@@ -15,5 +15,6 @@ router.post("/logout", logout);
 // Protected routes
 router.get("/me", requireAuth, getMe as any);
 router.patch("/profile", requireAuth, updateProfile as any);
+router.patch("/change-password", requireAuth, changePassword as any);
 
 export default router;

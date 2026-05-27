@@ -23,12 +23,12 @@ export interface WorkerProfileInput {
 }
 
 // ── Pre-Registration OTP Flow ────────────────────────────────
-export const sendSignupOTP = async (email: string): Promise<{ message: string }> => {
+export const sendSignupOTP = async (email: string): Promise<{ message: string, otp?: string }> => {
   const existingUser = await User.findOne({ email });
   if (existingUser) throw new Error("An account with this email already exists.");
 
   const otp = generateOTP();
-  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
+  const expiresAt = new Date(Date.now() + 30 * 1000); // 30 seconds
 
   // Upsert OTP record
   await Otp.findOneAndUpdate(
@@ -37,9 +37,22 @@ export const sendSignupOTP = async (email: string): Promise<{ message: string }>
     { upsert: true, new: true }
   );
 
+  // Manually force-delete the OTP from the database after exactly 30 seconds
+  // (MongoDB's background TTL sweeper can take up to 60 seconds, so this ensures instant deletion)
+  setTimeout(async () => {
+    try {
+      await Otp.deleteOne({ email, otp, verified: false });
+    } catch (err) {
+      console.error("Failed to delete expired OTP:", err);
+    }
+  }, 30 * 1000);
+
   await sendOTPEmail({ to: email, otp });
 
-  return { message: "An OTP has been sent to your email address." };
+  return { 
+    message: "An OTP has been sent to your email address.",
+    otp // Temporary: return OTP directly to frontend
+  };
 };
 
 export const verifySignupOTP = async (email: string, otpCode: string): Promise<{ message: string }> => {

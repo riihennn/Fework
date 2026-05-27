@@ -6,13 +6,21 @@ interface SendOTPParams {
 }
 
 export const sendOTPEmail = async ({ to, otp }: SendOTPParams): Promise<void> => {
-  const transporter = nodemailer.createTransport({
+  console.log('SMTP config:', {
     host: process.env.SMTP_HOST,
-    port: parseInt(process.env.SMTP_PORT || "587"),
+    port: process.env.SMTP_PORT,
+    user: process.env.SMTP_USER,
+  });
+  const transporter = nodemailer.createTransport({
+    host: "smtp.gmail.com",
+    port: 465,
+    secure: true, // true for 465
     auth: {
       user: process.env.SMTP_USER,
       pass: process.env.SMTP_PASS,
     },
+    logger: true,
+    debug: true,
   });
 
   const mailOptions = {
@@ -22,7 +30,7 @@ export const sendOTPEmail = async ({ to, otp }: SendOTPParams): Promise<void> =>
     html: `
       <div style="font-family: Arial, sans-serif; max-width: 600px; margin: 0 auto; padding: 20px;">
         <h2 style="color: #0F172A;">Welcome to Fework!</h2>
-        <p>Please use the following 6-digit code to verify your email address. This code is valid for 10 minutes.</p>
+        <p>Please use the following 6-digit code to verify your email address. This code is valid for 30 seconds.</p>
         <div style="background-color: #F0FDF4; padding: 20px; border-radius: 8px; text-align: center; margin: 20px 0;">
           <h1 style="color: #0D9488; margin: 0; letter-spacing: 5px;">${otp}</h1>
         </div>
@@ -35,6 +43,7 @@ export const sendOTPEmail = async ({ to, otp }: SendOTPParams): Promise<void> =>
 
   try {
     await transporter.sendMail(mailOptions);
+    console.log("Email sent successfully via Nodemailer!");
   } catch (error) {
     console.error("=====================================");
     console.error("Error sending OTP email:", error);

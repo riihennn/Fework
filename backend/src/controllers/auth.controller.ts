@@ -181,10 +181,18 @@ export const getMe = async (req: AuthRequest, res: Response): Promise<void> => {
 // ── PATCH /api/auth/profile ──────────────────────────────────
 export const updateProfile = async (req: AuthRequest, res: Response): Promise<void> => {
   try {
-    const { avatar } = req.body;
+    const { avatar, name, phone, city, address, state, pincode } = req.body;
     const user = await User.findById(req.user!.id);
     if (!user) { sendError(res, "User not found.", 404); return; }
+    
     if (avatar !== undefined) user.avatar = avatar;
+    if (name !== undefined) user.name = name;
+    if (phone !== undefined) user.phone = phone;
+    if (city !== undefined) user.city = city;
+    if (address !== undefined) user.address = address;
+    if (state !== undefined) user.state = state;
+    if (pincode !== undefined) user.pincode = pincode;
+    
     await user.save();
     sendSuccess(res, "Profile updated.", {
       id: user._id,
@@ -194,9 +202,35 @@ export const updateProfile = async (req: AuthRequest, res: Response): Promise<vo
       avatar: user.avatar,
       phone: user.phone,
       city: user.city,
+      address: user.address,
+      state: user.state,
+      pincode: user.pincode,
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to update profile.";
+    sendError(res, message, 500);
+  }
+};
+
+// ── PATCH /api/auth/change-password ──────────────────────────
+export const changePassword = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { currentPassword, newPassword } = req.body;
+    const user = await User.findById(req.user!.id).select("+password");
+    if (!user) { sendError(res, "User not found.", 404); return; }
+    
+    // Only check current password if it's not a google auth account (though they usually don't have passwords)
+    if (user.password !== "GOOGLE_AUTH_PLACEHOLDER_PASS") {
+      const isMatch = await user.comparePassword(currentPassword);
+      if (!isMatch) { sendError(res, "Incorrect current password.", 400); return; }
+    }
+    
+    user.password = newPassword;
+    await user.save();
+    
+    sendSuccess(res, "Password updated successfully.");
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to change password.";
     sendError(res, message, 500);
   }
 };
