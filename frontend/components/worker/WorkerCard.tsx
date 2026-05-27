@@ -39,9 +39,9 @@ export default function WorkerCard({ worker }: { worker: WorkerPublic }) {
           </div>
         </div>
 
-        {/* Availability Badge */}
-        <div className="flex items-center gap-1.5 bg-[#E8F8F0] text-[#1E7E34] text-[9px] font-black uppercase tracking-widest px-3 py-1.5 rounded-full mt-1">
-          <span className="w-1.5 h-1.5 bg-[#28A745] rounded-full animate-pulse" />
+        {/* Invisible spacer to perfectly maintain the card structure */}
+        <div className="flex items-center gap-1.5 text-[9px] font-black uppercase tracking-widest px-3 py-1.5 mt-1 invisible pointer-events-none select-none">
+          <span className="w-1.5 h-1.5 rounded-full" />
           Available Now
         </div>
       </div>

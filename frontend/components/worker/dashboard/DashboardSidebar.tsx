@@ -46,7 +46,6 @@ export default function DashboardSidebar({
   isAvailable,
   togglingAvailability,
   handleToggleAvailability,
-  handleLogout,
   sidebarOpen,
   setSidebarOpen,
 }: SidebarProps) {
@@ -114,12 +113,6 @@ export default function DashboardSidebar({
         <div className="px-4 py-6 border-t border-gray-50 space-y-1.5">
           <button className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-[13px] font-black uppercase tracking-widest text-gray-400 hover:text-[#0F172A] hover:bg-gray-50 transition-all group">
             <HelpCircle size={18} className="group-hover:text-teal-500" /> Help Center
-          </button>
-          <button
-            onClick={handleLogout}
-            className="w-full flex items-center gap-4 px-5 py-4 rounded-2xl text-[13px] font-black uppercase tracking-widest text-rose-500/60 hover:text-rose-600 hover:bg-rose-50 transition-all group"
-          >
-            <LogOut size={18} /> Sign Out
           </button>
         </div>
       </aside>
