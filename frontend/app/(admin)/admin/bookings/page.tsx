@@ -1,6 +1,7 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { adminApi, AdminBooking } from "@/services/api";
 import { Calendar, MapPin, Clock, Edit3, X, Zap } from "lucide-react";
 
@@ -16,16 +17,33 @@ const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string }> = 
   cancelled: { bg: "bg-slate-100", text: "text-slate-700", dot: "bg-slate-500" },
 };
 
-export default function AdminBookingsPage() {
+function AdminBookingsContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [bookings, setBookings] = useState<AdminBooking[]>([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
-  const [page, setPage] = useState(1);
+  const [page, _setPage] = useState(() => Number(searchParams.get("page")) || 1);
   const [status, setStatus] = useState("all");
   const [loading, setLoading] = useState(true);
   const [editing, setEditing] = useState<AdminBooking | null>(null);
   const [newStatus, setNewStatus] = useState("");
   const [saving, setSaving] = useState(false);
+
+  const setPage = useCallback((newPage: number) => {
+    _setPage(newPage);
+    const params = new URLSearchParams(searchParams.toString());
+    if (newPage === 1) params.delete("page");
+    else params.set("page", newPage.toString());
+    router.push(`${pathname}?${params.toString()}`);
+  }, [searchParams, pathname, router]);
+
+  useEffect(() => {
+    const p = Number(searchParams.get("page")) || 1;
+    if (p !== page) _setPage(p);
+  }, [searchParams, page]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -252,5 +270,13 @@ export default function AdminBookingsPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminBookingsPage() {
+  return (
+    <Suspense fallback={<div className="p-8 flex justify-center"><div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div></div>}>
+      <AdminBookingsContent />
+    </Suspense>
   );
 }

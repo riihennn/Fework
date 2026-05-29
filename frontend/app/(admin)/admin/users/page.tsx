@@ -1,16 +1,21 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { adminApi, AdminUser } from "@/services/api";
 import { Search, Trash2, ShieldAlert, X, Users } from "lucide-react";
 
 const ROLES = ["all", "client", "worker"];
 
-export default function AdminUsersPage() {
+function AdminUsersContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [users, setUsers] = useState<AdminUser[]>([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
-  const [page, setPage] = useState(1);
+  const [page, _setPage] = useState(() => Number(searchParams.get("page")) || 1);
   const [role, setRole] = useState("all");
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
@@ -18,6 +23,19 @@ export default function AdminUsersPage() {
   const [deleting, setDeleting] = useState<string | null>(null);
   const [confirm, setConfirm] = useState<AdminUser | null>(null);
   const [togglingBlockId, setTogglingBlockId] = useState<string | null>(null);
+
+  const setPage = useCallback((newPage: number) => {
+    _setPage(newPage);
+    const params = new URLSearchParams(searchParams.toString());
+    if (newPage === 1) params.delete("page");
+    else params.set("page", newPage.toString());
+    router.push(`${pathname}?${params.toString()}`);
+  }, [searchParams, pathname, router]);
+
+  useEffect(() => {
+    const p = Number(searchParams.get("page")) || 1;
+    if (p !== page) _setPage(p);
+  }, [searchParams, page]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -253,5 +271,13 @@ export default function AdminUsersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminUsersPage() {
+  return (
+    <Suspense fallback={<div className="p-8 flex justify-center"><div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div></div>}>
+      <AdminUsersContent />
+    </Suspense>
   );
 }

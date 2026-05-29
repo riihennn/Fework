@@ -1,19 +1,37 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
+import { useEffect, useState, useCallback, Suspense } from "react";
+import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { adminApi, AdminWorker } from "@/services/api";
 import { Search, MapPin, Briefcase, Star, Award, X } from "lucide-react";
 import Link from "next/link";
 
-export default function AdminWorkersPage() {
+function AdminWorkersContent() {
+  const router = useRouter();
+  const pathname = usePathname();
+  const searchParams = useSearchParams();
+
   const [workers, setWorkers] = useState<AdminWorker[]>([]);
   const [total, setTotal] = useState(0);
   const [pages, setPages] = useState(1);
-  const [page, setPage] = useState(1);
+  const [page, _setPage] = useState(() => Number(searchParams.get("page")) || 1);
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
+
+  const setPage = useCallback((newPage: number) => {
+    _setPage(newPage);
+    const params = new URLSearchParams(searchParams.toString());
+    if (newPage === 1) params.delete("page");
+    else params.set("page", newPage.toString());
+    router.push(`${pathname}?${params.toString()}`);
+  }, [searchParams, pathname, router]);
+
+  useEffect(() => {
+    const p = Number(searchParams.get("page")) || 1;
+    if (p !== page) _setPage(p);
+  }, [searchParams, page]);
 
   const load = useCallback(() => {
     setLoading(true);
@@ -176,5 +194,13 @@ export default function AdminWorkersPage() {
         </div>
       )}
     </div>
+  );
+}
+
+export default function AdminWorkersPage() {
+  return (
+    <Suspense fallback={<div className="p-8 flex justify-center"><div className="w-8 h-8 border-4 border-teal-500 border-t-transparent rounded-full animate-spin"></div></div>}>
+      <AdminWorkersContent />
+    </Suspense>
   );
 }
