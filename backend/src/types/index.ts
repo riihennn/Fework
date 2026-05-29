@@ -76,6 +76,8 @@ export interface IJob extends Document {
   estimatedPay: number;
   actualPay?: number;
   isUrgent: boolean;
+  isRevisit: boolean;
+  revisitFor?: Types.ObjectId;
   paymentMethod: "cash";
   paymentStatus: "pending" | "paid";
   clientApproval?: IJobClientApproval;

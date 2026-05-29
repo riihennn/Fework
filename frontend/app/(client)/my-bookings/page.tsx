@@ -6,10 +6,10 @@ import {
   Briefcase, Clock, Loader2, MapPin, Calendar, RefreshCw,
   Zap, User, Banknote, CheckCircle2, AlertTriangle, FileText,
   Phone, Star, ChevronRight, X, XCircle, CalendarClock,
-  ChevronLeft, MessageSquare
+  ChevronLeft, MessageSquare, AlertCircle
 } from "lucide-react";
 import { io } from "socket.io-client";
-import { bookingApi, reviewApi, BookingJob, API_BASE_URL } from "@/services/api";
+import { bookingApi, reviewApi, ticketApi, BookingJob, API_BASE_URL } from "@/services/api";
 import ChatBox from "@/components/shared/ChatBox";
 import { useAuthStore } from "@/store/authStore";
 
@@ -538,12 +538,138 @@ function ReviewModal({
   );
 }
 
+// ─── Report Issue Modal ───────────────────────────────────────────────────
+function ReportIssueModal({ job, onClose, onDone }: { job: BookingJob; onClose: () => void; onDone: () => void }) {
+  const [issueType, setIssueType] = useState("Worker Didn't Arrive");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [evidenceImage, setEvidenceImage] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+
+
+  const handleSubmit = async () => {
+    if (!title || !description) return;
+    setLoading(true); setError(null);
+    try {
+      let imageUrl = "";
+      if (evidenceImage) {
+        setUploadingImage(true);
+        const formData = new FormData();
+        formData.append("file", evidenceImage);
+        const token = localStorage.getItem("token");
+        const uploadRes = await fetch("http://localhost:5001/api/upload", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        setUploadingImage(false);
+        if (uploadData.success) {
+          imageUrl = uploadData.secure_url;
+        } else {
+          throw new Error("Image upload failed");
+        }
+      }
+
+      await ticketApi.create({
+        bookingId: job._id,
+        issueType,
+        title,
+        description,
+        evidenceImages: imageUrl ? [imageUrl] : [],
+      });
+      setSubmitted(true);
+      setTimeout(() => { onDone(); onClose(); }, 1500);
+    } catch (e: any) {
+      console.error("[Report Issue] Failed:", e);
+      setError(e.message || "Failed to submit report. Please try again.");
+    } finally { setLoading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+      <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="bg-white rounded-[32px] shadow-2xl border border-gray-100 w-full max-w-md p-8">
+        {submitted ? (
+          <div className="text-center py-4">
+            <div className="w-16 h-16 rounded-full bg-teal-50 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 size={32} className="text-teal-500" />
+            </div>
+            <h3 className="text-xl font-black text-[#0F172A] mb-1">Report Submitted</h3>
+            <p className="text-sm text-gray-400">Our team will review this issue shortly.</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-black text-[#0F172A]">Report Issue</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Regarding <span className="font-bold text-[#0F172A]">{job.service}</span></p>
+              </div>
+              <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-400">
+                <X size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">Issue Type</label>
+                <select value={issueType} onChange={e => setIssueType(e.target.value)}
+                  className="w-full border border-gray-200 rounded-2xl p-4 text-sm font-bold text-[#0F172A] outline-none cursor-pointer focus:bg-white focus:border-rose-500 transition-all bg-slate-50">
+                  <option value="Worker Didn't Arrive">Worker Didn't Arrive</option>
+                  <option value="Work Not Completed">Work Not Completed</option>
+                  <option value="Poor Service Quality">Poor Service Quality</option>
+                  <option value="Payment Issue">Payment Issue</option>
+                  <option value="Booking Cancellation">Booking Cancellation</option>
+                  <option value="Worker Misconduct">Worker Misconduct</option>
+                  <option value="Client Misconduct">Client Misconduct</option>
+                  <option value="Safety Concern">Safety Concern</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">Title</label>
+                <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Brief title for your issue..."
+                  className="w-full border border-gray-200 rounded-2xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition-all bg-slate-50" />
+              </div>
+
+              <div>
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">Details</label>
+                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder="Describe what happened in detail..."
+                  className="w-full border border-gray-200 rounded-2xl p-4 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition-all bg-slate-50" />
+              </div>
+
+              <div>
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">Evidence Image (Optional)</label>
+                <input type="file" accept="image/*" onChange={e => setEvidenceImage(e.target.files?.[0] || null)}
+                  className="w-full border border-gray-200 rounded-2xl p-3 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100 transition-all bg-slate-50" />
+              </div>
+
+              {error && <p className="text-sm text-rose-500 font-bold">{error}</p>}
+
+              <button onClick={handleSubmit} disabled={!title || !description || loading || uploadingImage}
+                className="w-full h-12 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-2">
+                {(loading || uploadingImage) ? <Loader2 size={16} className="animate-spin" /> : <><AlertCircle size={16} /> Submit Report</>}
+              </button>
+            </div>
+          </>
+        )}
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Booking Card ──────────────────────────────────────────────────────
 function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => void }) {
   const [showModal, setShowModal] = useState(false);
   const [showReview, setShowReview] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
   const [showReschedule, setShowReschedule] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const canModify = ["pending", "accepted"].includes(job.status);
   const canReschedule = canModify && (job.rescheduledCount ?? 0) < 1;
   const meta = STATUS_META[job.status] || STATUS_META[""];
@@ -695,12 +821,22 @@ function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => voi
             </div>
           )}
 
-          {/* Chat Action */}
-          {["accepted", "in_progress", "awaiting_approval", "completed", "disputed"].includes(job.status) && (
-            <div className="flex mb-4">
+          {/* Chat Actions — active jobs */}
+          {["accepted", "in_progress", "awaiting_approval", "disputed"].includes(job.status) && (
+            <div className="flex gap-2 mb-4">
               <button onClick={() => window.dispatchEvent(new CustomEvent("open-chat-client", { detail: { id: job._id, title: workerUser?.name || "Professional", status: job.status } }))}
-                className="flex items-center justify-center gap-1.5 w-full py-2.5 rounded-xl bg-teal-50 text-teal-600 border border-teal-100 text-sm font-bold hover:bg-teal-100 transition-all">
-                <MessageSquare size={16} /> Chat with Worker
+                className="flex flex-1 items-center justify-center gap-1.5 py-2.5 rounded-xl bg-teal-50 text-teal-600 border border-teal-100 text-sm font-bold hover:bg-teal-100 transition-all">
+                <MessageSquare size={16} /> Chat
+              </button>
+            </div>
+          )}
+
+          {/* Report Issue — only on completed jobs (review stage) */}
+          {job.status === "completed" && (
+            <div className="flex gap-2 mb-4">
+              <button onClick={() => setShowReport(true)}
+                className="flex flex-1 items-center justify-center gap-1.5 py-2.5 rounded-xl bg-rose-50 text-rose-600 border border-rose-100 text-sm font-bold hover:bg-rose-100 transition-all">
+                <AlertCircle size={16} /> Report Issue
               </button>
             </div>
           )}
@@ -736,6 +872,7 @@ function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => voi
         {showReview && <ReviewModal jobId={job._id} onClose={() => setShowReview(false)} onDone={onRefresh} />}
         {showCancel && <CancelModal job={job} onClose={() => setShowCancel(false)} onDone={onRefresh} />}
         {showReschedule && <RescheduleModal job={job} onClose={() => setShowReschedule(false)} onDone={onRefresh} />}
+        {showReport && <ReportIssueModal job={job} onClose={() => setShowReport(false)} onDone={onRefresh} />}
       </AnimatePresence>
     </>
   );

@@ -456,4 +456,51 @@ export const adminApi = {
 
   updateBookingStatus: (id: string, status: string) =>
     request<AdminBooking>(`/admin/bookings/${id}/status`, "PATCH", { status }),
+    
+  getTickets: () =>
+    request<{ tickets: TicketData[] }>("/tickets", "GET"),
+
+  updateTicketStatus: (id: string, status: string) =>
+    request<{ ticket: TicketData }>(`/tickets/${id}/status`, "PATCH", { status }),
+    
+  resolveTicket: (id: string, data: any) =>
+    request<{ ticket: TicketData }>(`/tickets/${id}/respond`, "PATCH", data),
+
+  assignTicketRevisit: (id: string, data: { scheduledAt?: string; estimatedPay?: number }) =>
+    request<{ ticket: TicketData; newBooking: any }>(`/tickets/${id}/revisit`, "POST", data),
+
+  deleteTicket: (id: string) =>
+    request<{ message: string }>(`/tickets/${id}`, "DELETE"),
+};
+
+// ─── Support Ticket Types & API ─────────────────────────────────────
+export interface TicketData {
+  _id: string;
+  user: { _id: string; name: string; email: string; avatar?: string };
+  booking: { _id: string; service: string; location: string; scheduledAt: string; client?: any; worker?: any };
+  role: "client" | "worker";
+  issueType: "Worker Didn't Arrive" | "Work Not Completed" | "Poor Service Quality" | "Payment Issue" | "Booking Cancellation" | "Worker Misconduct" | "Client Misconduct" | "Safety Concern" | "Other";
+  title: string;
+  description: string;
+  evidenceImages: string[];
+  status: "OPEN" | "IN_REVIEW" | "WAITING_FOR_RESPONSE" | "RESOLVED" | "REJECTED" | "CLOSED";
+  adminNotes?: string;
+  resolution?: string;
+  resolvedAt?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+export const ticketApi = {
+  create: (data: {
+    bookingId: string;
+    issueType: string;
+    title: string;
+    description: string;
+    evidenceImages?: string[];
+  }) => request<{ ticket: TicketData }>("/tickets", "POST", data),
+
+  getMyTickets: () => request<{ tickets: TicketData[] }>("/tickets/my", "GET"),
+  
+  getTicketDetails: (id: string) => request<{ ticket: TicketData }>(`/tickets/${id}`, "GET"),
 };

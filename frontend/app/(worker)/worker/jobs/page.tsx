@@ -8,7 +8,7 @@ import {
   MessageSquare, User, Banknote, FileText, Send, CalendarClock, Play, Square, Timer
 } from "lucide-react";
 import { io } from "socket.io-client";
-import { bookingApi, BookingJob, JobStatus, API_BASE_URL } from "@/services/api";
+import { bookingApi, ticketApi, BookingJob, JobStatus, API_BASE_URL } from "@/services/api";
 import StatusErrorModal from "@/components/worker/dashboard/StatusErrorModal";
 import ChatBox from "@/components/shared/ChatBox";
 import Avatar from "@/components/shared/Avatar";
@@ -69,6 +69,124 @@ function WorkerNoteModal({
   );
 }
 
+// ─── Report Issue Modal ───────────────────────────────────────────────────
+function ReportIssueModal({ job, onClose, onDone }: { job: BookingJob; onClose: () => void; onDone: () => void }) {
+  const [issueType, setIssueType] = useState("Safety Concern");
+  const [title, setTitle] = useState("");
+  const [description, setDescription] = useState("");
+  const [evidenceImage, setEvidenceImage] = useState<File | null>(null);
+  const [uploadingImage, setUploadingImage] = useState(false);
+  const [loading, setLoading] = useState(false);
+  const [error, setError] = useState<string | null>(null);
+  const [submitted, setSubmitted] = useState(false);
+
+  const handleSubmit = async () => {
+    if (!title || !description) return;
+    setLoading(true); setError(null);
+    try {
+      let imageUrl = "";
+      if (evidenceImage) {
+        setUploadingImage(true);
+        const formData = new FormData();
+        formData.append("file", evidenceImage);
+        const token = localStorage.getItem("token");
+        const uploadRes = await fetch("http://localhost:5001/api/upload", {
+          method: "POST",
+          headers: { Authorization: `Bearer ${token}` },
+          body: formData,
+        });
+        const uploadData = await uploadRes.json();
+        setUploadingImage(false);
+        if (uploadData.success) {
+          imageUrl = uploadData.secure_url;
+        } else {
+          throw new Error("Image upload failed");
+        }
+      }
+
+      await ticketApi.create({
+        bookingId: job._id,
+        issueType,
+        title,
+        description,
+        evidenceImages: imageUrl ? [imageUrl] : [],
+      });
+      setSubmitted(true);
+      setTimeout(() => { onDone(); onClose(); }, 1500);
+    } catch (e: any) { setError(e.message); }
+    finally { setLoading(false); }
+  };
+
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+      <motion.div initial={{ opacity: 0, scale: 0.95, y: 20 }} animate={{ opacity: 1, scale: 1, y: 0 }}
+        exit={{ opacity: 0, scale: 0.95, y: 20 }}
+        className="bg-white rounded-[32px] shadow-2xl border border-gray-100 w-full max-w-md p-8">
+        {submitted ? (
+          <div className="text-center py-4">
+            <div className="w-16 h-16 rounded-full bg-teal-50 flex items-center justify-center mx-auto mb-4">
+              <CheckCircle2 size={32} className="text-teal-500" />
+            </div>
+            <h3 className="text-xl font-black text-[#0F172A] mb-1">Report Submitted</h3>
+            <p className="text-sm text-gray-400">Our team will review this issue shortly.</p>
+          </div>
+        ) : (
+          <>
+            <div className="flex items-center justify-between mb-6">
+              <div>
+                <h3 className="text-xl font-black text-[#0F172A]">Report Issue</h3>
+                <p className="text-xs text-gray-400 mt-0.5">Regarding <span className="font-bold text-[#0F172A]">{job.service}</span></p>
+              </div>
+              <button onClick={onClose} className="w-8 h-8 rounded-xl hover:bg-gray-100 flex items-center justify-center text-gray-400">
+                <XCircle size={16} />
+              </button>
+            </div>
+
+            <div className="space-y-4">
+              <div>
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">Issue Type</label>
+                <select value={issueType} onChange={e => setIssueType(e.target.value)}
+                  className="w-full border border-gray-200 rounded-2xl p-4 text-sm font-bold text-[#0F172A] outline-none cursor-pointer focus:bg-white focus:border-rose-500 transition-all bg-slate-50">
+                  <option value="Safety Concern">Safety Concern</option>
+                  <option value="Client Misconduct">Client Misconduct</option>
+                  <option value="Booking Cancellation">Client Cancelled / Unavailable</option>
+                  <option value="Payment Issue">Payment Issue</option>
+                  <option value="Other">Other</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">Title</label>
+                <input type="text" value={title} onChange={e => setTitle(e.target.value)} placeholder="Brief title for your issue..."
+                  className="w-full border border-gray-200 rounded-2xl p-4 text-sm focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition-all bg-slate-50" />
+              </div>
+
+              <div>
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">Details</label>
+                <textarea value={description} onChange={e => setDescription(e.target.value)} rows={3} placeholder="Describe what happened in detail..."
+                  className="w-full border border-gray-200 rounded-2xl p-4 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-rose-300 focus:border-rose-400 transition-all bg-slate-50" />
+              </div>
+
+              <div>
+                <label className="text-xs font-black text-gray-400 uppercase tracking-widest mb-2 block">Evidence Image (Optional)</label>
+                <input type="file" accept="image/*" onChange={e => setEvidenceImage(e.target.files?.[0] || null)}
+                  className="w-full border border-gray-200 rounded-2xl p-3 text-sm file:mr-4 file:py-2 file:px-4 file:rounded-xl file:border-0 file:text-xs file:font-bold file:bg-rose-50 file:text-rose-700 hover:file:bg-rose-100 transition-all bg-slate-50" />
+              </div>
+
+              {error && <p className="text-sm text-rose-500 font-bold">{error}</p>}
+
+              <button onClick={handleSubmit} disabled={!title || !description || loading || uploadingImage}
+                className="w-full h-12 rounded-2xl bg-rose-500 hover:bg-rose-600 text-white text-sm font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-2 mt-2">
+                {(loading || uploadingImage) ? <Loader2 size={16} className="animate-spin" /> : <><AlertTriangle size={16} /> Submit Report</>}
+              </button>
+            </div>
+          </>
+        )}
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Live Timer ────────────────────────────────────────────────────────
 function LiveTimer({ startedAt }: { startedAt: string }) {
   const [elapsed, setElapsed] = useState(0);
@@ -102,6 +220,7 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
   const { user } = useAuthStore();
   const [loading, setLoading] = useState<string | null>(null);
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [showReport, setShowReport] = useState(false);
   const [errorModal, setErrorModal] = useState({ open: false, message: "" });
   const [activeChatJob, setActiveChatJob] = useState<{ id: string; title: string } | null>(null);
   const meta = STATUS_META[job.status] || STATUS_META[""];
@@ -123,7 +242,8 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
     finally { setLoading(null); }
   };
 
-  const showChat = ["accepted", "in_progress", "awaiting_approval"].includes(job.status);
+  const showChat = ["accepted", "in_progress", "awaiting_approval", "disputed"].includes(job.status);
+  const canReport = job.status === "completed";
 
   return (
     <>
@@ -281,9 +401,18 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
               )}
 
               {showChat && (
-                <button onClick={() => setActiveChatJob({ id: job._id, title: job.service })}
-                  className="h-10 px-4 rounded-xl bg-teal-50 border border-teal-100 text-xs font-bold text-teal-600 hover:bg-teal-100 hover:text-teal-700 transition-all flex items-center gap-1.5">
-                  <MessageSquare size={12} /> Chat
+                <>
+                  <button onClick={() => setActiveChatJob({ id: job._id, title: job.service })}
+                    className="h-10 px-4 rounded-xl bg-teal-50 border border-teal-100 text-xs font-bold text-teal-600 hover:bg-teal-100 hover:text-teal-700 transition-all flex items-center gap-1.5">
+                    <MessageSquare size={12} /> Chat
+                  </button>
+                </>
+              )}
+
+              {canReport && (
+                <button onClick={() => setShowReport(true)}
+                  className="h-10 px-4 rounded-xl bg-rose-50 border border-rose-100 text-xs font-bold text-rose-600 hover:bg-rose-100 hover:text-rose-700 transition-all flex items-center gap-1.5" title="Report Issue">
+                  <AlertTriangle size={12} /> Report Issue
                 </button>
               )}
 
@@ -302,6 +431,7 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
       </motion.div>
 
       {showNoteModal && <WorkerNoteModal job={job} onSubmit={handleAdvance} onClose={() => setShowNoteModal(false)} />}
+      {showReport && <ReportIssueModal job={job} onClose={() => setShowReport(false)} onDone={onAction} />}
       <StatusErrorModal 
         isOpen={errorModal.open} 
         message={errorModal.message} 

@@ -19,6 +19,8 @@ const JobSchema = new Schema<IJob>(
     estimatedPay: { type: Number, required: true },
     actualPay: { type: Number },
     isUrgent: { type: Boolean, default: false },
+    isRevisit: { type: Boolean, default: false },
+    revisitFor: { type: Schema.Types.ObjectId, ref: "Job" },
     paymentMethod: { type: String, enum: ["cash"], default: "cash" },
     paymentStatus: { type: String, enum: ["pending", "paid"], default: "pending" },
     workerNote: { type: String, trim: true },
