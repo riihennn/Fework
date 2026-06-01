@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Bell, UserCircle, LogOut, Briefcase, Settings, ChevronDown, Clock, MessageSquare, Trash2 } from "lucide-react";
+import { Bell, UserCircle, LogOut, Briefcase, Settings, ChevronDown, Clock, MessageSquare, Trash2, AlertTriangle } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -239,6 +239,14 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
                         <Clock size={16} className="text-teal-500" /> My Bookings
                       </Link>
                     )}
+
+                    <Link
+                      href="/report-issue"
+                      className="flex items-center gap-3 px-4 py-3 text-xs font-bold text-gray-600 hover:bg-gray-50 hover:text-[#0F172A] rounded-xl transition-all"
+                      onClick={() => setIsDropdownOpen(false)}
+                    >
+                      <AlertTriangle size={16} className="text-orange-400" /> Report Issue
+                    </Link>
 
                     <Link
                       href="/settings"

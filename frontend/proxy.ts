@@ -29,7 +29,7 @@ import type { NextRequest } from "next/server";
  */
 
 // Routes workers are allowed to visit
-const WORKER_ALLOWED = ["/worker"];
+const WORKER_ALLOWED = ["/worker", "/report-issue"];
 
 // Routes guests are allowed to visit without a token
 const GUEST_ALLOWED = ["/", "/findservices", "/login", "/signup"];

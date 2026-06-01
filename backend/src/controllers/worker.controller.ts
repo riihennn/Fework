@@ -124,6 +124,35 @@ export const getWorkerById = async (
 };
 
 /**
+ * @desc    Get logged-in worker's full profile
+ * @route   GET /api/workers/me
+ * @access  Private (Worker only)
+ */
+export const getMyWorkerProfile = async (
+  req: AuthRequest,
+  res: Response,
+  next: NextFunction
+) => {
+  try {
+    const worker = await Worker.findOne({ user: req.user?.id }).populate(
+      "user",
+      "-password"
+    );
+
+    if (!worker) {
+      return res.status(404).json({
+        success: false,
+        message: "Worker profile not found",
+      });
+    }
+
+    sendSuccess(res, "Worker profile retrieved", { worker, user: worker.user });
+  } catch (error) {
+    next(error);
+  }
+};
+
+/**
  * @desc    Toggle worker availability
  * @route   PUT /api/workers/availability
  * @access  Private (Worker only)
@@ -334,7 +363,7 @@ export const updateWorkerProfile = async (
   next: NextFunction
 ) => {
   try {
-    const { avatar, idProof, bio, hourlyRate, experience, city, state, pincode, location } = req.body;
+    const { avatar, idProof, bio, hourlyRate, experience, city, state, pincode, location, skills } = req.body;
 
     // Update User.avatar
     if (avatar !== undefined) {
@@ -351,6 +380,7 @@ export const updateWorkerProfile = async (
     if (state !== undefined) workerUpdate.state = state;
     if (pincode !== undefined) workerUpdate.pincode = pincode;
     if (location !== undefined) workerUpdate.location = location;
+    if (skills !== undefined) workerUpdate.skills = skills;
 
     const worker = await Worker.findOneAndUpdate(
       { user: req.user!.id },

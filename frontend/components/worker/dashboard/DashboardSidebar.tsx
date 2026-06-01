@@ -8,6 +8,7 @@ import {
   Star, 
   Settings, 
   HelpCircle, 
+  AlertTriangle,
   LogOut 
 } from "lucide-react";
 import Link from "next/link";

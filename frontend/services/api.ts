@@ -479,7 +479,7 @@ export interface TicketData {
   user: { _id: string; name: string; email: string; avatar?: string };
   booking: { _id: string; service: string; location: string; scheduledAt: string; client?: any; worker?: any };
   role: "client" | "worker";
-  issueType: "Worker Didn't Arrive" | "Work Not Completed" | "Poor Service Quality" | "Payment Issue" | "Booking Cancellation" | "Worker Misconduct" | "Client Misconduct" | "Safety Concern" | "Other";
+  issueType: "Worker Didn't Arrive" | "Work Not Completed" | "Poor Service Quality" | "Payment Issue" | "Booking Cancellation" | "Worker Misconduct" | "Client Misconduct" | "Safety Concern" | "App Issue" | "Other";
   title: string;
   description: string;
   evidenceImages: string[];
@@ -493,7 +493,7 @@ export interface TicketData {
 
 export const ticketApi = {
   create: (data: {
-    bookingId: string;
+    bookingId?: string;
     issueType: string;
     title: string;
     description: string;

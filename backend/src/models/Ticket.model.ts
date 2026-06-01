@@ -2,9 +2,9 @@ import mongoose, { Schema, Document } from "mongoose";
 
 export interface ITicket extends Document {
   user: mongoose.Types.ObjectId;
-  booking: mongoose.Types.ObjectId;
+  booking?: mongoose.Types.ObjectId;
   role: "client" | "worker";
-  issueType: "Worker Didn't Arrive" | "Work Not Completed" | "Poor Service Quality" | "Payment Issue" | "Booking Cancellation" | "Worker Misconduct" | "Client Misconduct" | "Safety Concern" | "Other";
+  issueType: "Worker Didn't Arrive" | "Work Not Completed" | "Poor Service Quality" | "Payment Issue" | "Booking Cancellation" | "Worker Misconduct" | "Client Misconduct" | "Safety Concern" | "App Issue" | "Other";
   title: string;
   description: string;
   evidenceImages: string[];
@@ -19,7 +19,7 @@ export interface ITicket extends Document {
 const ticketSchema = new Schema(
   {
     user: { type: Schema.Types.ObjectId, ref: "User", required: true },
-    booking: { type: Schema.Types.ObjectId, ref: "Job", required: true },
+    booking: { type: Schema.Types.ObjectId, ref: "Job", required: false },
     role: { type: String, enum: ["client", "worker"], required: true },
     issueType: {
       type: String,
@@ -32,6 +32,7 @@ const ticketSchema = new Schema(
         "Worker Misconduct", 
         "Client Misconduct", 
         "Safety Concern", 
+        "App Issue",
         "Other"
       ],
       required: true,

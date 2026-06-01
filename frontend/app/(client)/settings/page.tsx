@@ -3,7 +3,7 @@
 import { useState, useEffect, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
 import { authApi } from "@/services/api";
-import { User, MapPin, Shield, Camera, Loader2, CheckCircle2 } from "lucide-react";
+import { User, MapPin, Shield, Camera, Loader2, CheckCircle2, Pencil } from "lucide-react";
 import Image from "next/image";
 
 export default function SettingsPage() {
@@ -24,6 +24,9 @@ export default function SettingsPage() {
   const [currentPassword, setCurrentPassword] = useState("");
   const [newPassword, setNewPassword] = useState("");
   const [confirmPassword, setConfirmPassword] = useState("");
+
+  const [isEditingProfile, setIsEditingProfile] = useState(false);
+  const [isEditingLocation, setIsEditingLocation] = useState(false);
 
   const [loading, setLoading] = useState(false);
   const [successMsg, setSuccessMsg] = useState("");
@@ -62,8 +65,10 @@ export default function SettingsPage() {
     try {
       if (activeTab === "profile") {
         await authApi.updateProfile({ name, phone });
+        setIsEditingProfile(false);
       } else if (activeTab === "location") {
         await authApi.updateProfile({ city, address, state, pincode });
+        setIsEditingLocation(false);
       }
       await restoreSession(); // refresh user data in store
       showMessage("Profile updated successfully!");
@@ -183,9 +188,17 @@ export default function SettingsPage() {
         <div className="flex-1 p-6 md:p-10">
           {activeTab === "profile" && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Profile Details</h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Profile Details</h2>
+                {!isEditingProfile && (
+                  <button onClick={() => setIsEditingProfile(true)} className="p-2.5 bg-gray-100 text-gray-500 rounded-xl hover:bg-gray-200 hover:text-teal-600 transition-all active:scale-95" title="Edit Profile Details">
+                    <Pencil size={18} />
+                  </button>
+                )}
+              </div>
               
-              <div className="flex items-center gap-6 mb-8 pb-8 border-b border-gray-100">
+              <div className={`transition-all duration-300 ${!isEditingProfile ? "opacity-75 pointer-events-none grayscale-[0.2]" : ""}`}>
+                <div className="flex items-center gap-6 mb-8 pb-8 border-b border-gray-100">
                 <div className="relative group">
                   <div className="w-24 h-24 rounded-full bg-gray-100 overflow-hidden border-2 border-white shadow-md relative">
                     {user?.avatar ? (
@@ -224,7 +237,8 @@ export default function SettingsPage() {
                       type="text"
                       value={name}
                       onChange={(e) => setName(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
+                      disabled={!isEditingProfile}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all disabled:bg-gray-100 disabled:text-gray-500"
                     />
                   </div>
                   <div>
@@ -243,27 +257,40 @@ export default function SettingsPage() {
                       type="tel"
                       value={phone}
                       onChange={(e) => setPhone(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
+                      disabled={!isEditingProfile}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all disabled:bg-gray-100 disabled:text-gray-500"
                     />
                   </div>
                 </div>
                 
-                <div className="flex justify-end pt-4">
-                  <button 
-                    disabled={loading}
-                    className="px-6 py-3 bg-[#0F172A] text-white rounded-xl font-bold hover:bg-gray-800 transition-all shadow-md shadow-gray-200 flex items-center gap-2 disabled:opacity-70"
-                  >
-                    {loading && <Loader2 size={16} className="animate-spin" />}
-                    Save Changes
-                  </button>
-                </div>
+                {isEditingProfile && (
+                  <div className="flex justify-end pt-4 gap-3">
+                    <button type="button" onClick={() => setIsEditingProfile(false)} className="px-6 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-all">Cancel</button>
+                    <button 
+                      disabled={loading}
+                      className="px-6 py-3 bg-[#0F172A] text-white rounded-xl font-bold hover:bg-gray-800 transition-all shadow-md shadow-gray-200 flex items-center gap-2 disabled:opacity-70"
+                    >
+                      {loading && <Loader2 size={16} className="animate-spin" />}
+                      Save Changes
+                    </button>
+                  </div>
+                )}
               </form>
+              </div>
             </div>
           )}
 
           {activeTab === "location" && (
             <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-              <h2 className="text-xl font-bold text-gray-900 mb-6">Location Information</h2>
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-900">Location Information</h2>
+                {!isEditingLocation && (
+                  <button onClick={() => setIsEditingLocation(true)} className="p-2.5 bg-gray-100 text-gray-500 rounded-xl hover:bg-gray-200 hover:text-teal-600 transition-all active:scale-95" title="Edit Location Information">
+                    <Pencil size={18} />
+                  </button>
+                )}
+              </div>
+              <div className={`transition-all duration-300 ${!isEditingLocation ? "opacity-75 pointer-events-none grayscale-[0.2]" : ""}`}>
               <form onSubmit={handleUpdateProfile} className="space-y-6">
                 <div>
                   <label className="block text-sm font-medium text-gray-700 mb-2">Street Address</label>
@@ -271,7 +298,8 @@ export default function SettingsPage() {
                     type="text"
                     value={address}
                     onChange={(e) => setAddress(e.target.value)}
-                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
+                    disabled={!isEditingLocation}
+                    className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all disabled:bg-gray-100 disabled:text-gray-500"
                   />
                 </div>
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
@@ -281,7 +309,8 @@ export default function SettingsPage() {
                       type="text"
                       value={city}
                       onChange={(e) => setCity(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
+                      disabled={!isEditingLocation}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all disabled:bg-gray-100 disabled:text-gray-500"
                     />
                   </div>
                   <div>
@@ -290,7 +319,8 @@ export default function SettingsPage() {
                       type="text"
                       value={state}
                       onChange={(e) => setState(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
+                      disabled={!isEditingLocation}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all disabled:bg-gray-100 disabled:text-gray-500"
                     />
                   </div>
                   <div>
@@ -299,21 +329,26 @@ export default function SettingsPage() {
                       type="text"
                       value={pincode}
                       onChange={(e) => setPincode(e.target.value)}
-                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all"
+                      disabled={!isEditingLocation}
+                      className="w-full px-4 py-3 rounded-xl border border-gray-200 bg-white text-gray-900 font-medium focus:outline-none focus:ring-2 focus:ring-teal-500/20 focus:border-teal-500 transition-all disabled:bg-gray-100 disabled:text-gray-500"
                     />
                   </div>
                 </div>
                 
-                <div className="flex justify-end pt-4">
-                  <button 
-                    disabled={loading}
-                    className="px-6 py-3 bg-[#0F172A] text-white rounded-xl font-bold hover:bg-gray-800 transition-all shadow-md shadow-gray-200 flex items-center gap-2 disabled:opacity-70"
-                  >
-                    {loading && <Loader2 size={16} className="animate-spin" />}
-                    Save Location
-                  </button>
-                </div>
+                {isEditingLocation && (
+                  <div className="flex justify-end pt-4 gap-3">
+                    <button type="button" onClick={() => setIsEditingLocation(false)} className="px-6 py-3 bg-gray-100 text-gray-600 rounded-xl font-bold hover:bg-gray-200 transition-all">Cancel</button>
+                    <button 
+                      disabled={loading}
+                      className="px-6 py-3 bg-[#0F172A] text-white rounded-xl font-bold hover:bg-gray-800 transition-all shadow-md shadow-gray-200 flex items-center gap-2 disabled:opacity-70"
+                    >
+                      {loading && <Loader2 size={16} className="animate-spin" />}
+                      Save Location
+                    </button>
+                  </div>
+                )}
               </form>
+              </div>
             </div>
           )}
 

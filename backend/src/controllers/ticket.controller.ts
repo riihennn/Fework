@@ -18,16 +18,14 @@ export const createTicket = async (req: Request, res: Response): Promise<void> =
       return;
     }
 
-    if (!bookingId) {
-      sendError(res, "Booking ID is required to raise a ticket", 400);
-      return;
-    }
-
-    // Verify booking exists
-    const booking = await Booking.findById(bookingId);
-    if (!booking) {
-      sendError(res, "Booking not found", 404);
-      return;
+    let booking;
+    if (bookingId) {
+      // Verify booking exists
+      booking = await Booking.findById(bookingId);
+      if (!booking) {
+        sendError(res, "Booking not found", 404);
+        return;
+      }
     }
 
     const ticket = await Ticket.create({
