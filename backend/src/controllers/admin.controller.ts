@@ -1,5 +1,6 @@
 import { Response } from "express";
 import { AuthRequest } from "../types";
+import { sseService } from "../services/sse.service";
 import { sendSuccess, sendError } from "../utils/response.utils";
 import User from "../models/User.model";
 import Worker from "../models/Worker.model";
@@ -175,6 +176,14 @@ export const toggleBlockUser = async (req: AuthRequest, res: Response): Promise<
     user.isBlocked = !user.isBlocked;
     await user.save();
 
+    // If the blocked user is a worker, push a real-time SSE event to kick them out
+    if (user.isBlocked && user.role === "worker") {
+      const workerDoc = await Worker.findOne({ user: user._id });
+      if (workerDoc) {
+        sseService.sendToWorker(workerDoc._id.toString(), "user_blocked", { isBlocked: true });
+      }
+    }
+
     sendSuccess(res, `User ${user.isBlocked ? "blocked" : "unblocked"} successfully.`, {
       isBlocked: user.isBlocked,
     });
@@ -342,6 +351,10 @@ export const verifyWorker = async (req: AuthRequest, res: Response): Promise<voi
 
     worker.verificationStatus = status;
     await worker.save();
+
+    // Push real-time update to the worker so their dashboard reloads
+    sseService.sendToWorker(worker._id.toString(), "worker_verified", { status });
+
     sendSuccess(res, `Worker has been ${status}.`, {
       verificationStatus: worker.verificationStatus,
     });

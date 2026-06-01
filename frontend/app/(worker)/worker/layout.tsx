@@ -40,7 +40,13 @@ export default function WorkerLayout({
     if (isAuthenticated && user?.role === "worker") {
       workerApi.getDashboard().then(data => {
         setIsAvailable(data.stats.isAvailable);
-      }).catch(console.error);
+      }).catch((e) => {
+        // Silently ignore expected errors (blocked/pending) — the page handles them
+        const msg = (e?.message || "").toLowerCase();
+        if (!msg.includes("blocked") && !msg.includes("pending")) {
+          console.error("Layout dashboard fetch error:", e);
+        }
+      });
     }
   }, [isAuthenticated, user]);
 
@@ -58,10 +64,23 @@ export default function WorkerLayout({
     setIncomingJobs((prev) => prev.filter((j) => j.id !== data.jobId));
   }, []);
 
+  const handleWorkerVerified = useCallback(() => {
+    // Reload to refresh the dashboard blur/overlay instantly
+    window.location.reload();
+  }, []);
+
+  const handleUserBlocked = useCallback(async () => {
+    // Log out and redirect to login immediately so the worker doesn't get stuck on the dashboard
+    await logout();
+    router.push("/login?reason=blocked");
+  }, [logout, router]);
+
   useSSE(
     {
       new_booking: handleNewBooking,
       booking_updated: handleBookingUpdated,
+      worker_verified: handleWorkerVerified,
+      user_blocked: handleUserBlocked,
     },
     { enabled: isAuthenticated && user?.role === "worker" }
   );

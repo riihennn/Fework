@@ -6,13 +6,16 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Mail, Lock, ArrowRight, ShieldCheck, Loader2, AlertCircle, CheckCircle2
 } from "lucide-react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { signIn } from "next-auth/react";
 import { useAuthStore } from "@/store/authStore";
+import { Ban } from "lucide-react";
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const { login, isLoading, error, clearError } = useAuthStore();
+  const isBlocked = searchParams.get("reason") === "blocked";
 
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -66,6 +69,17 @@ export default function LoginPage() {
               <h1 className="text-3xl font-bold text-[#0F172A] mb-2">Welcome Back</h1>
               <p className="text-gray-500">Sign in to continue to Fework</p>
             </div>
+
+            {/* Blocked notice */}
+            {isBlocked && (
+              <div className="mb-6 p-4 rounded-2xl bg-rose-50 border border-rose-100 flex items-start gap-3">
+                <Ban size={18} className="text-rose-500 shrink-0 mt-0.5" />
+                <div>
+                  <p className="font-bold text-rose-700 text-sm">Account Blocked</p>
+                  <p className="text-rose-600 text-xs mt-0.5">Your account has been blocked by an admin. Contact support for help.</p>
+                </div>
+              </div>
+            )}
 
             {/* Error alert */}
             <AnimatePresence mode="wait">

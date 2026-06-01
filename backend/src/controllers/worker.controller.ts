@@ -24,7 +24,7 @@ export const getAllWorkers = async (
     const limitNum = parseInt(limit as string) || 10;
     const skip = (pageNum - 1) * limitNum;
 
-    // Build query object
+    // Build query object — only show approved workers in public directory
     const query: any = { verificationStatus: "approved" };
 
     // 1. Filter by category

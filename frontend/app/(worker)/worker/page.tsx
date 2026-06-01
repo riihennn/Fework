@@ -4,7 +4,7 @@ import RecentJobs from "@/components/worker/dashboard/RecentJobs";
 import PerformancePanel from "@/components/worker/dashboard/PerformancePanel";
 import { workerApi, WorkerDashboardData } from "@/services/api";
 import { headers } from "next/headers";
-import { Clock, ShieldAlert } from "lucide-react";
+import { Clock, ShieldAlert, Ban } from "lucide-react";
 
 export default async function WorkerOverview() {
   const headerList = await headers();
@@ -16,8 +16,36 @@ export default async function WorkerOverview() {
   try {
     data = await workerApi.getDashboard(cookieHeader ? { cookie: cookieHeader } : {});
   } catch (e: any) {
-    console.error("Dashboard fetch error:", e);
     error = e.message || "Failed to load dashboard data";
+    // Only log truly unexpected errors, not handled cases like blocked accounts
+    const isExpected = error.toLowerCase().includes("blocked") || error.toLowerCase().includes("pending");
+    if (!isExpected) console.error("Dashboard fetch error:", e);
+  }
+
+  const isBlocked = error?.toLowerCase().includes("blocked");
+
+  if (isBlocked) {
+    return (
+      <div className="fixed inset-0 z-[100] flex items-center justify-center p-6 bg-white/60 backdrop-blur-md">
+        <div className="bg-white max-w-lg w-full p-10 rounded-[32px] shadow-2xl border border-gray-100 flex flex-col items-center text-center animate-in fade-in zoom-in duration-500">
+          <div className="bg-rose-50 p-5 rounded-full mb-6 border border-rose-100 shadow-inner">
+            <Ban size={48} className="text-rose-500" />
+          </div>
+          <h2 className="text-3xl font-black text-[#0F172A] mb-4">Account Blocked</h2>
+          <p className="text-gray-500 font-medium leading-relaxed mb-8">
+            Your account has been blocked by the admin. Please contact support if you believe this is a mistake.
+          </p>
+          <div className="w-full flex flex-col gap-3">
+            <a href="mailto:support@fework.com" className="block w-full py-4 bg-[#0F172A] text-white rounded-2xl font-bold hover:bg-gray-800 transition-all shadow-md">
+              Contact Support
+            </a>
+            <a href="/login" className="block w-full py-3 text-gray-500 rounded-2xl font-bold hover:text-gray-700 transition-all text-sm">
+              Sign out
+            </a>
+          </div>
+        </div>
+      </div>
+    );
   }
 
   if (error) {
