@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback, Suspense } from "react";
 import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { adminApi, AdminWorker } from "@/services/api";
-import { Search, MapPin, Briefcase, Star, Award, X } from "lucide-react";
+import { Search, MapPin, Briefcase, Star, Award, X, Clock, CheckCircle, XCircle, Filter } from "lucide-react";
 import Link from "next/link";
 
 function AdminWorkersContent() {
@@ -17,6 +17,7 @@ function AdminWorkersContent() {
   const [page, _setPage] = useState(() => Number(searchParams.get("page")) || 1);
   const [search, setSearch] = useState("");
   const [query, setQuery] = useState("");
+  const [activeTab, setActiveTab] = useState<"directory" | "pending">("directory");
   const [loading, setLoading] = useState(true);
   const [togglingId, setTogglingId] = useState<string | null>(null);
 
@@ -37,11 +38,12 @@ function AdminWorkersContent() {
     setLoading(true);
     const params: Record<string, string> = { page: String(page), limit: "12" };
     if (query) params.search = query;
+    params.status = activeTab;
     adminApi.getWorkers(params)
       .then((d) => { setWorkers(d.workers); setTotal(d.pagination.total); setPages(d.pagination.pages); })
       .catch(console.error)
       .finally(() => setLoading(false));
-  }, [page, query]);
+  }, [page, query, activeTab]);
 
   useEffect(() => { load(); }, [load]);
 
@@ -61,9 +63,26 @@ function AdminWorkersContent() {
       {/* Header */}
       <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-3xl font-bold text-[#0F172A] tracking-tight">Worker Directory</h1>
-          <p className="text-gray-500 mt-1">Manage {total.toLocaleString()} registered professionals.</p>
+          <h1 className="text-3xl font-bold text-[#0F172A] tracking-tight">Worker Management</h1>
+          <p className="text-gray-500 mt-1">Manage registered professionals and verify new applicants.</p>
         </div>
+      </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-6 border-b border-gray-200">
+        <button 
+          onClick={() => { setActiveTab("directory"); setPage(1); }}
+          className={`pb-4 px-2 text-sm font-bold border-b-2 transition-all ${activeTab === "directory" ? "border-[#0F172A] text-[#0F172A]" : "border-transparent text-gray-500 hover:text-gray-800"}`}
+        >
+          Worker Directory
+        </button>
+        <button 
+          onClick={() => { setActiveTab("pending"); setPage(1); }}
+          className={`pb-4 px-2 text-sm font-bold border-b-2 transition-all flex items-center gap-2 ${activeTab === "pending" ? "border-amber-500 text-amber-600" : "border-transparent text-gray-500 hover:text-gray-800"}`}
+        >
+          Pending Approvals
+          {activeTab !== "pending" && <span className="bg-amber-100 text-amber-700 px-2 py-0.5 rounded-full text-[10px]">Action Needed</span>}
+        </button>
       </div>
 
       {/* Toolbar */}
@@ -83,6 +102,8 @@ function AdminWorkersContent() {
           </button>
         )}
       </div>
+      
+      {/* Filters (Removed) */}
 
       {/* Worker Grid */}
       {loading ? (
@@ -140,7 +161,7 @@ function AdminWorkersContent() {
               </div>
 
               {/* Badges & Meta */}
-              <div className="flex items-center gap-2 mb-6">
+              <div className="flex flex-wrap items-center gap-2 mb-6">
                 <div className={`flex items-center gap-1.5 px-3 py-1.5 rounded-full text-[10px] font-black uppercase tracking-widest ${w.isAvailable ? 'bg-green-50 text-green-600 border border-green-100' : 'bg-gray-100 text-gray-500 border border-gray-200'
                   }`}>
                   <span className={`w-1.5 h-1.5 rounded-full ${w.isAvailable ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
@@ -149,6 +170,16 @@ function AdminWorkersContent() {
                 {w.city && (
                   <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-gray-50 border border-gray-100 text-gray-500 text-[10px] font-black uppercase tracking-widest">
                     <MapPin size={12} /> {w.city}
+                  </div>
+                )}
+                {w.verificationStatus === "pending" && (
+                  <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-amber-50 text-amber-600 border border-amber-200 text-[10px] font-black uppercase tracking-widest">
+                    <Clock size={12} /> Pending
+                  </div>
+                )}
+                {w.verificationStatus === "rejected" && (
+                  <div className="flex items-center gap-1 px-3 py-1.5 rounded-full bg-rose-50 text-rose-600 border border-rose-200 text-[10px] font-black uppercase tracking-widest">
+                    <XCircle size={12} /> Rejected
                   </div>
                 )}
               </div>

@@ -44,6 +44,7 @@ export interface WorkerPublic {
 }
 
 export interface WorkerDashboardData {
+  verificationStatus: "pending" | "approved" | "rejected";
   stats: {
     totalEarnings: number;
     jobsCompleted: number;
@@ -396,6 +397,7 @@ export interface AdminWorker {
   hourlyRate: number;
   city: string;
   createdAt: string;
+  verificationStatus: "pending" | "approved" | "rejected";
   userInfo: { name: string; email: string; avatar?: string };
 }
 
@@ -448,6 +450,9 @@ export const adminApi = {
 
   toggleElite: (id: string) =>
     request<{ isElite: boolean }>(`/admin/workers/${id}/elite`, "PATCH"),
+
+  verifyWorker: (id: string, status: "approved" | "rejected" | "pending") =>
+    request<{ verificationStatus: string }>(`/admin/workers/${id}/verify`, "PATCH", { status }),
 
   getBookings: (params?: Record<string, string>) => {
     const qs = params ? "?" + new URLSearchParams(params).toString() : "";

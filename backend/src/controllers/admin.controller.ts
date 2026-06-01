@@ -190,6 +190,7 @@ export const getWorkers = async (req: AuthRequest, res: Response): Promise<void>
     const page = Math.max(1, parseInt(req.query.page as string) || 1);
     const limit = Math.max(1, parseInt(req.query.limit as string) || 20);
     const search = req.query.search as string | undefined;
+    const status = req.query.status as string | undefined;
     const skip = (page - 1) * limit;
 
     const pipeline: Record<string, unknown>[] = [
@@ -216,6 +217,18 @@ export const getWorkers = async (req: AuthRequest, res: Response): Promise<void>
       });
     }
 
+    if (status && status !== "all") {
+      if (status === "directory") {
+        pipeline.push({
+          $match: { verificationStatus: { $ne: "pending" } }
+        });
+      } else {
+        pipeline.push({
+          $match: { verificationStatus: status }
+        });
+      }
+    }
+
     const countPipeline = [...pipeline, { $count: "total" }];
     const dataPipeline = [
       ...pipeline,
@@ -233,6 +246,7 @@ export const getWorkers = async (req: AuthRequest, res: Response): Promise<void>
           hourlyRate: 1,
           city: 1,
           createdAt: 1,
+          verificationStatus: 1,
           "userInfo.name": 1,
           "userInfo.email": 1,
           "userInfo.avatar": 1,
@@ -307,6 +321,32 @@ export const toggleElite = async (req: AuthRequest, res: Response): Promise<void
     });
   } catch (err: unknown) {
     const message = err instanceof Error ? err.message : "Failed to toggle elite status.";
+    sendError(res, message, 500);
+  }
+};
+
+// ── PATCH /api/admin/workers/:id/verify ───────────────────────
+export const verifyWorker = async (req: AuthRequest, res: Response): Promise<void> => {
+  try {
+    const { status } = req.body;
+    if (!["approved", "rejected", "pending"].includes(status)) {
+      sendError(res, "Invalid status.", 400);
+      return;
+    }
+
+    const worker = await Worker.findById(req.params.id);
+    if (!worker) {
+      sendError(res, "Worker not found.", 404);
+      return;
+    }
+
+    worker.verificationStatus = status;
+    await worker.save();
+    sendSuccess(res, `Worker has been ${status}.`, {
+      verificationStatus: worker.verificationStatus,
+    });
+  } catch (err: unknown) {
+    const message = err instanceof Error ? err.message : "Failed to update verification status.";
     sendError(res, message, 500);
   }
 };

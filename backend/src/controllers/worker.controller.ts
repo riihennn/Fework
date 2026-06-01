@@ -25,7 +25,7 @@ export const getAllWorkers = async (
     const skip = (pageNum - 1) * limitNum;
 
     // Build query object
-    const query: any = {};
+    const query: any = { verificationStatus: "approved" };
 
     // 1. Filter by category
     if (category && category !== "All") {
@@ -172,6 +172,13 @@ export const toggleAvailability = async (
       });
     }
 
+    if (worker.verificationStatus !== "approved" && worker.isAvailable === false) {
+      return res.status(403).json({
+        success: false,
+        message: "Your profile is pending approval. You cannot go online yet.",
+      });
+    }
+
     const currentStatus = worker.isAvailable;
 
     // If trying to go OFFLINE (current is true, target is false)
@@ -245,6 +252,7 @@ export const getWorkerDashboard = async (
 
     // 4. Construct response
     const dashboardData = {
+      verificationStatus: worker.verificationStatus || "pending",
       stats: {
         totalEarnings,
         jobsCompleted: worker.totalJobs,

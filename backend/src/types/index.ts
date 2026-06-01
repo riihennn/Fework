@@ -44,6 +44,7 @@ export interface IWorker extends Document {
   isAvailable: boolean;
   isElite: boolean;
   idProof?: string;
+  verificationStatus: "pending" | "approved" | "rejected";
 }
 
 // ─── Job Document ─────────────────────────────────────────────

@@ -3,7 +3,7 @@
 import { useEffect, useState, useCallback } from "react";
 import { useParams, useRouter } from "next/navigation";
 import { adminApi, AdminWorker, AdminBooking } from "@/services/api";
-import { ArrowLeft, Star, MapPin, Mail, Briefcase, Award, Calendar, CheckCircle, Clock, XCircle, AlertCircle, MessageSquare } from "lucide-react";
+import { ArrowLeft, Star, MapPin, Mail, Briefcase, Award, Calendar, CheckCircle, Clock, XCircle, AlertCircle, MessageSquare, ShieldCheck, ShieldAlert } from "lucide-react";
 import Link from "next/link";
 import Avatar from "@/components/shared/Avatar";
 
@@ -39,6 +39,16 @@ export default function AdminWorkerDetailsPage() {
     try {
       const { isElite } = await adminApi.toggleElite(worker._id);
       setWorker({ ...worker, isElite });
+    } catch (e: any) { alert(e.message); }
+    finally { setTogglingId(null); }
+  };
+
+  const handleVerify = async (status: "approved" | "rejected") => {
+    if (!worker) return;
+    setTogglingId(`verify-${status}`);
+    try {
+      const res = await adminApi.verifyWorker(worker._id, status);
+      setWorker({ ...worker, verificationStatus: res.verificationStatus as any });
     } catch (e: any) { alert(e.message); }
     finally { setTogglingId(null); }
   };
@@ -86,6 +96,24 @@ export default function AdminWorkerDetailsPage() {
                 <span className="text-[10px] font-black uppercase tracking-widest">Elite</span>
               </div>
             )}
+            {worker.verificationStatus === "pending" && (
+              <div className="absolute top-4 left-4 bg-amber-50 text-amber-600 border border-amber-200 px-3 py-1 rounded-full flex items-center gap-1 shadow-sm z-10">
+                <Clock size={14} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Pending</span>
+              </div>
+            )}
+            {worker.verificationStatus === "rejected" && (
+              <div className="absolute top-4 left-4 bg-rose-50 text-rose-600 border border-rose-200 px-3 py-1 rounded-full flex items-center gap-1 shadow-sm z-10">
+                <XCircle size={14} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Rejected</span>
+              </div>
+            )}
+            {worker.verificationStatus === "approved" && (
+              <div className="absolute top-4 left-4 bg-green-50 text-green-600 border border-green-200 px-3 py-1 rounded-full flex items-center gap-1 shadow-sm z-10">
+                <CheckCircle size={14} />
+                <span className="text-[10px] font-black uppercase tracking-widest">Approved</span>
+              </div>
+            )}
             
             <div className="flex flex-col items-center text-center">
               <Avatar src={worker.userInfo.avatar} name={worker.userInfo.name} size={80} className="mb-4" />
@@ -124,12 +152,32 @@ export default function AdminWorkerDetailsPage() {
             </div>
 
             <div className="mt-6 pt-6 border-t border-gray-100 flex flex-col gap-3">
+              {worker.verificationStatus === "pending" && (
+                <div className="flex gap-2">
+                  <button
+                    onClick={() => handleVerify("approved")}
+                    disabled={!!togglingId}
+                    className="flex-1 py-3 rounded-2xl text-sm font-bold bg-green-500 text-white hover:bg-green-600 transition-all shadow-md flex items-center justify-center gap-2"
+                  >
+                    <ShieldCheck size={18} />
+                    {togglingId === "verify-approved" ? "..." : "Approve"}
+                  </button>
+                  <button
+                    onClick={() => handleVerify("rejected")}
+                    disabled={!!togglingId}
+                    className="flex-1 py-3 rounded-2xl text-sm font-bold bg-rose-50 text-rose-600 hover:bg-rose-100 transition-all flex items-center justify-center gap-2"
+                  >
+                    <ShieldAlert size={18} />
+                    {togglingId === "verify-rejected" ? "..." : "Reject"}
+                  </button>
+                </div>
+              )}
               <button
                 onClick={handleToggleElite}
                 disabled={togglingId === worker._id}
                 className={`w-full py-3 rounded-2xl text-sm font-bold transition-all ${
                   worker.isElite
-                    ? "bg-rose-50 text-rose-600 hover:bg-rose-100"
+                    ? "bg-amber-50 text-amber-600 hover:bg-amber-100 border border-amber-200"
                     : "bg-[#0F172A] text-white hover:bg-gray-800 shadow-md"
                 }`}
               >

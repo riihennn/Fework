@@ -69,6 +69,11 @@ const WorkerSchema = new Schema<IWorker>(
       type: String,
       default: "",
     },
+    verificationStatus: {
+      type: String,
+      enum: ["pending", "approved", "rejected"],
+      default: "pending",
+    },
   },
   {
     timestamps: true,

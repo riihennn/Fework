@@ -9,6 +9,7 @@ import {
   getWorkers,
   getWorkerById,
   toggleElite,
+  verifyWorker,
   getBookings,
   updateBookingStatus,
 } from "../controllers/admin.controller";
@@ -30,6 +31,7 @@ router.patch("/users/:id/block", toggleBlockUser);
 router.get("/workers", getWorkers);
 router.get("/workers/:id", getWorkerById);
 router.patch("/workers/:id/elite", toggleElite);
+router.patch("/workers/:id/verify", verifyWorker);
 
 // ── Bookings ───────────────────────────────────────────────────
 router.get("/bookings", getBookings);
