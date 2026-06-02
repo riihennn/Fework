@@ -5,7 +5,7 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase, Clock, CheckCircle2, XCircle, Loader2, MapPin,
   Calendar, RefreshCw, Zap, ChevronRight, AlertTriangle,
-  MessageSquare, User, Banknote, FileText, Send, CalendarClock, Play, Square, Timer
+  MessageSquare, User, Banknote, FileText, Send, CalendarClock, Play, Square, Timer, Phone
 } from "lucide-react";
 import { io } from "socket.io-client";
 import { bookingApi, ticketApi, BookingJob, JobStatus, API_BASE_URL } from "@/services/api";
@@ -138,37 +138,52 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
         <div className={`h-1 ${meta.dot}`} />
 
         <div className="p-6 md:p-7">
-          {/* Header row */}
-          <div className="flex items-start justify-between gap-4 mb-5">
-            <div className="flex items-center gap-4">
-              {/* Client avatar */}
-              <Avatar
-                  src={(clientInfo as any)?.avatar}
-                  name={clientInfo?.name}
-                  size={48}
-                  className="rounded-2xl"
-                />
-              <div>
-                <div className="font-bold text-[#0F172A] text-base">{clientInfo?.name || "Client"}</div>
-                <div className="text-xs text-gray-400 font-medium">{clientInfo?.email}</div>
-              </div>
-            </div>
-            <div className="flex items-center gap-2 shrink-0">
-              {job.isUrgent && (
-                <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 text-rose-600 text-[9px] font-black uppercase tracking-widest border border-rose-100">
-                  <Zap size={9} /> Urgent
-                </span>
-              )}
-              <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${meta.color} ${meta.bg} ${meta.border}`}>
-                {meta.label}
+          {/* Top Row: Status Badges */}
+          <div className="flex items-center justify-between mb-4">
+            <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${meta.color} ${meta.bg} ${meta.border}`}>
+              {meta.label}
+            </span>
+            {job.isUrgent && (
+              <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 text-rose-600 text-[9px] font-black uppercase tracking-widest border border-rose-100">
+                <Zap size={9} /> Urgent
               </span>
+            )}
+          </div>
+
+          {/* Client Details Section - Highlighted */}
+          <div className="flex items-start gap-4 mb-5 p-4 bg-gray-50/80 rounded-2xl border border-gray-100/80">
+            <Avatar
+              src={(clientInfo as any)?.avatar}
+              name={clientInfo?.name}
+              size={52}
+              className="rounded-2xl shrink-0 shadow-sm border border-white"
+            />
+            <div className="flex-1 min-w-0">
+              <div className="font-black text-[#0F172A] text-lg mb-0.5 truncate">{clientInfo?.name || "Client"}</div>
+              <div className="flex flex-col gap-1.5 mt-1 text-xs text-gray-500 font-medium">
+                {clientInfo?.phone && (
+                  <span className="flex items-center gap-2"><Phone size={14} className="text-teal-500 shrink-0" /> {clientInfo.phone}</span>
+                )}
+                <span className="flex items-center gap-2"><MapPin size={14} className="text-teal-500 shrink-0" /> <span className="line-clamp-2 leading-relaxed">{job.location}</span></span>
+              </div>
             </div>
           </div>
 
           {/* Service & Description */}
-          <div className="mb-5">
-            <h3 className="text-2xl font-bold text-[#0F172A] mb-1">{job.service}</h3>
-            <p className="text-sm text-gray-500 leading-relaxed line-clamp-2">{job.description}</p>
+          <div className="mb-5 px-1">
+            <p className="text-xs font-bold text-gray-400 uppercase tracking-widest mb-2">Requirement</p>
+            <p className="text-sm text-[#0F172A] leading-relaxed font-medium">{job.description}</p>
+          </div>
+
+          {/* Schedule Box */}
+          <div className="flex flex-wrap items-center gap-4 p-3.5 bg-teal-50/40 border border-teal-100/50 rounded-xl mb-6 text-sm font-bold text-teal-800">
+            <span className="flex items-center gap-2"><Calendar size={16} className="text-teal-600" />
+              {new Date(job.scheduledAt).toLocaleDateString("en-IN", { weekday: 'short', day: "numeric", month: "short", year: "numeric" })}
+            </span>
+            <div className="hidden sm:block w-px h-4 bg-teal-200" />
+            <span className="flex items-center gap-2"><Clock size={16} className="text-teal-600" />
+              {new Date(job.scheduledAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
+            </span>
           </div>
 
           {/* ── Rescheduled by Client Notice ──────────────────────── */}
@@ -233,20 +248,6 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
               <LiveTimer startedAt={(job as any).startedAt} />
             </div>
           )}
-
-          {/* Meta info */}
-          <div className="flex flex-wrap gap-4 text-xs text-gray-400 font-medium mb-6">
-            <span className="flex items-center gap-1.5"><MapPin size={12} className="text-teal-500" />{job.location}</span>
-            <span className="flex items-center gap-1.5"><Calendar size={12} className="text-teal-500" />
-              {new Date(job.scheduledAt).toLocaleDateString("en-IN", { day: "numeric", month: "short", year: "numeric" })}
-            </span>
-            <span className="flex items-center gap-1.5"><Clock size={12} className="text-teal-500" />
-              {new Date(job.scheduledAt).toLocaleTimeString("en-IN", { hour: "2-digit", minute: "2-digit" })}
-            </span>
-            {clientInfo?.phone && (
-              <span className="flex items-center gap-1.5"><MessageSquare size={12} className="text-teal-500" />{clientInfo.phone}</span>
-            )}
-          </div>
 
           {/* Footer: pay + actions */}
           <div className="flex items-center justify-between gap-4">

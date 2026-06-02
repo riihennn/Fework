@@ -6,7 +6,7 @@ import {
   Briefcase, Clock, Loader2, MapPin, Calendar, RefreshCw,
   Zap, User, Banknote, CheckCircle2, AlertTriangle, FileText,
   Phone, Star, ChevronRight, X, XCircle, CalendarClock,
-  ChevronLeft, MessageSquare, AlertCircle
+  ChevronLeft, MessageSquare, AlertCircle, CreditCard
 } from "lucide-react";
 import { io } from "socket.io-client";
 import { bookingApi, reviewApi, ticketApi, BookingJob, API_BASE_URL } from "@/services/api";
@@ -319,20 +319,16 @@ function ApprovalModal({
   onDone: () => void;
   onApproved: (jobId: string) => void;
 }) {
-  const [action, setAction] = useState<"approve" | "dispute" | null>(null);
+  const [paymentMethod, setPaymentMethod] = useState<"cash" | "online" | null>(null);
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!action) return;
+    if (!paymentMethod || paymentMethod !== "cash") return;
     setLoading(true);
     try {
-      await bookingApi.approveJob(job._id, action, note || undefined);
-      if (action === "approve") {
-        onApproved(job._id);
-      } else {
-        onDone();
-      }
+      await bookingApi.approveJob(job._id, "approve", note || undefined);
+      onApproved(job._id);
       onClose();
     } catch (e: any) {
       alert(e.message);
@@ -381,43 +377,48 @@ function ApprovalModal({
           <BillBreakdown job={job} />
         </div>
 
-        {/* Action choice */}
+        {/* Payment Method */}
         <div className="px-8 pt-6">
-          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Your Decision</p>
+          <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Payment Method</p>
           <div className="grid grid-cols-2 gap-3">
+            {/* Cash on Hand */}
             <button
-              onClick={() => setAction("approve")}
+              onClick={() => setPaymentMethod("cash")}
               className={`p-4 rounded-2xl border-2 text-left transition-all ${
-                action === "approve"
+                paymentMethod === "cash"
                   ? "border-teal-500 bg-teal-50"
                   : "border-gray-100 hover:border-teal-200 bg-white"
               }`}
             >
-              <CheckCircle2 size={20} className={action === "approve" ? "text-teal-500 mb-2" : "text-gray-300 mb-2"} />
-              <p className="font-bold text-sm text-[#0F172A]">Confirm Complete</p>
-              <p className="text-xs text-gray-400 mt-0.5">Work is done. Pay the worker.</p>
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-3 ${
+                paymentMethod === "cash" ? "bg-teal-500" : "bg-gray-100"
+              }`}>
+                <span className={`text-base font-black ${paymentMethod === "cash" ? "text-white" : "text-gray-500"}`}>₹</span>
+              </div>
+              <p className="font-bold text-sm text-[#0F172A]">Cash on Hand</p>
+              <p className="text-xs text-gray-400 mt-0.5">Pay directly to the worker.</p>
             </button>
-            <button
-              onClick={() => setAction("dispute")}
-              className={`p-4 rounded-2xl border-2 text-left transition-all ${
-                action === "dispute"
-                  ? "border-red-400 bg-red-50"
-                  : "border-gray-100 hover:border-red-200 bg-white"
-              }`}
-            >
-              <AlertTriangle size={20} className={action === "dispute" ? "text-red-500 mb-2" : "text-gray-300 mb-2"} />
-              <p className="font-bold text-sm text-[#0F172A]">Raise Issue</p>
-              <p className="text-xs text-gray-400 mt-0.5">Work isn't satisfactory yet.</p>
-            </button>
+
+            {/* Pay Online — Disabled (Coming Soon) */}
+            <div className="relative">
+              <div className="p-4 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 text-left opacity-60 cursor-not-allowed">
+                <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-3 bg-gray-200">
+                  <CreditCard size={16} className="text-gray-400" />
+                </div>
+                <p className="font-bold text-sm text-gray-400">Pay Online</p>
+                <p className="text-xs text-gray-400 mt-0.5">UPI / Card payment.</p>
+              </div>
+              <span className="absolute top-2 right-2 bg-gray-200 text-gray-500 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Soon</span>
+            </div>
           </div>
         </div>
 
-        {/* Note field */}
+        {/* Optional note */}
         <div className="px-8 pt-4">
           <textarea
             value={note}
             onChange={e => setNote(e.target.value)}
-            placeholder={action === "dispute" ? "Describe the issue clearly so the worker can fix it..." : "Optional message to the worker (e.g. great service!)"}
+            placeholder="Optional message to the worker (e.g. great service!)"
             rows={3}
             className="w-full border border-gray-200 rounded-2xl p-4 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-teal-400/30 focus:border-teal-400 transition-all"
           />
@@ -427,16 +428,10 @@ function ApprovalModal({
         <div className="p-8 pt-4">
           <button
             onClick={handleSubmit}
-            disabled={!action || loading}
-            className={`w-full h-13 py-3.5 rounded-2xl text-sm font-bold transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2 ${
-              action === "dispute"
-                ? "bg-red-500 hover:bg-red-600 text-white"
-                : "bg-teal-600 hover:bg-teal-700 text-white"
-            }`}
+            disabled={paymentMethod !== "cash" || loading}
+            className="w-full py-3.5 rounded-2xl text-sm font-bold transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white shadow-md"
           >
-            {loading ? <Loader2 size={16} className="animate-spin" /> : (
-              action === "dispute" ? <><AlertTriangle size={16} />Report Issue</> : <><CheckCircle2 size={16} />Confirm & Release Payment</>
-            )}
+            {loading ? <Loader2 size={16} className="animate-spin" /> : <><CheckCircle2 size={16} />Confirm &amp; Release Payment</>}
           </button>
         </div>
       </motion.div>

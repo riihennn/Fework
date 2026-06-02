@@ -1,34 +1,32 @@
 import "dotenv/config";
 import mongoose from "mongoose";
-import connectDB from "./config/db";
+import bcrypt from "bcryptjs";
 import User from "./models/User.model";
 
-const seedAdmin = async () => {
-  try {
-    await connectDB();
+async function seedAdmin() {
+  await mongoose.connect(process.env.MONGO_URI!);
+  console.log("Connected to DB");
 
-    const existing = await User.findOne({ email: "admin@fework.com" });
-    if (existing) {
-      console.log("⚠️  Admin user already exists:", existing.email);
-      process.exit(0);
-    }
+  const email = "admin@fework.com";
+  const existingAdmin = await User.findOne({ email });
 
+  if (!existingAdmin) {
+    const hashedPassword = await bcrypt.hash("Admin@123", 12);
     await User.create({
-      name: "Fework Admin",
-      email: "admin@fework.com",
-      password: "admin123!",
+      name: "Admin User",
+      email,
+      password: hashedPassword,
       role: "admin",
       isVerified: true,
+      phone: "+910000000000",
+      avatar: "https://ui-avatars.com/api/?name=Admin+User&background=0D8ABC&color=fff",
     });
-
-    console.log("✅ Admin user created:");
-    console.log("   Email:    admin@fework.com");
-    console.log("   Password: admin123!");
-    process.exit(0);
-  } catch (err) {
-    console.error("❌ Failed to seed admin:", err);
-    process.exit(1);
+    console.log(`✅ Admin created: ${email} / Admin@123`);
+  } else {
+    console.log(`✅ Admin already exists: ${email}`);
   }
-};
 
-seedAdmin();
+  await mongoose.disconnect();
+}
+
+seedAdmin().catch(console.error);

@@ -18,7 +18,7 @@ export default async function WorkerOverview() {
   } catch (e: any) {
     error = e.message || "Failed to load dashboard data";
     // Only log truly unexpected errors, not handled cases like blocked accounts
-    const isExpected = error.toLowerCase().includes("blocked") || error.toLowerCase().includes("pending");
+    const isExpected = error?.toLowerCase().includes("blocked") || error?.toLowerCase().includes("pending");
     if (!isExpected) console.error("Dashboard fetch error:", e);
   }
 

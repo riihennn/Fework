@@ -1,6 +1,7 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { authApi, AuthUser, WorkerProfile } from "@/services/api";
+import { useNotificationStore } from "./notificationStore";
 
 // ─── State Shape ────────────────────────────────────────────────
 interface AuthState {
@@ -118,6 +119,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
           // ignore
         } finally {
           set({ user: null, isAuthenticated: false });
+          useNotificationStore.getState().clearNotifications();
         }
       },
 

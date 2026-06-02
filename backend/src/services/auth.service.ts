@@ -28,7 +28,7 @@ export const sendSignupOTP = async (email: string): Promise<{ message: string, o
   if (existingUser) throw new Error("An account with this email already exists.");
 
   const otp = generateOTP();
-  const expiresAt = new Date(Date.now() + 30 * 1000); // 30 seconds
+  const expiresAt = new Date(Date.now() + 10 * 60 * 1000); // 10 minutes
 
   // Upsert OTP record
   await Otp.findOneAndUpdate(
@@ -36,16 +36,6 @@ export const sendSignupOTP = async (email: string): Promise<{ message: string, o
     { otp, expiresAt, verified: false },
     { upsert: true, new: true }
   );
-
-  // Manually force-delete the OTP from the database after exactly 30 seconds
-  // (MongoDB's background TTL sweeper can take up to 60 seconds, so this ensures instant deletion)
-  setTimeout(async () => {
-    try {
-      await Otp.deleteOne({ email, otp, verified: false });
-    } catch (err) {
-      console.error("Failed to delete expired OTP:", err);
-    }
-  }, 30 * 1000);
 
   await sendOTPEmail({ to: email, otp });
 
@@ -103,11 +93,13 @@ export const registerUser = async (
     password,
     role,
     phone,
-    city: city || "",
-    address: address || "",
-    state: state || "",
-    pincode: pincode || "",
-    isVerified: true, // Auto verify since they passed OTP or Google
+    // Only store address in User for CLIENT role.
+    // For workers, address lives exclusively in the Worker collection.
+    city:    role !== "worker" ? (city    || "") : "",
+    address: role !== "worker" ? (address || "") : "",
+    state:   role !== "worker" ? (state   || "") : "",
+    pincode: role !== "worker" ? (pincode || "") : "",
+    isVerified: true,
   });
 
   // If registering as a worker, create their professional profile

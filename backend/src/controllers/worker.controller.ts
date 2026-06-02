@@ -68,9 +68,9 @@ export const getAllWorkers = async (
     // 6. Handle Sorting
     if (sort) {
       const sortBy = (sort as string).split(",").join(" ");
-      workersQuery = workersQuery.sort(sortBy);
+      workersQuery = workersQuery.sort(`${sortBy} -_id`);
     } else {
-      workersQuery = workersQuery.sort("-rating"); // Default sort by rating
+      workersQuery = workersQuery.sort("-rating -_id"); // Default sort by rating
     }
 
     // 7. Apply Pagination
@@ -373,12 +373,12 @@ export const updateWorkerProfile = async (
   try {
     const { avatar, idProof, bio, hourlyRate, experience, city, state, pincode, location, skills } = req.body;
 
-    // Update User.avatar
+    // Update User — only avatar lives in User collection
     if (avatar !== undefined) {
       await User.findByIdAndUpdate(req.user!.id, { avatar });
     }
 
-    // Update Worker fields
+    // Update Worker — ALL address/professional fields live ONLY here (single source of truth)
     const workerUpdate: Record<string, unknown> = {};
     if (idProof !== undefined) workerUpdate.idProof = idProof;
     if (bio !== undefined) workerUpdate.bio = bio;

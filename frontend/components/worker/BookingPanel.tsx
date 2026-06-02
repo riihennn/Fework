@@ -43,9 +43,15 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
   // Step 1 fields — service is auto-derived from worker, not user-selectable
   const service                         = worker.category || worker.skills?.[0] || "General Service";
   const [description, setDescription]   = useState("");
-  const [location,    setLocation]      = useState("");
+  const [houseName,   setHouseName]     = useState("");
+  const [contactName, setContactName]   = useState("");
+  const [pincode,     setPincode]       = useState("");
+  const [streetArea,  setStreetArea]    = useState("");
   const [isUrgent,    setIsUrgent]      = useState(false);
   const [gpsLoading,  setGpsLoading]    = useState(false);
+
+  // Compose full location string from structured fields
+  const location = [houseName.trim(), streetArea.trim(), pincode.trim()].filter(Boolean).join(", ");
 
   // Step 2 fields
   const [calYear,   setCalYear]   = useState(now.getFullYear());
@@ -58,10 +64,12 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
   const [booked,  setBooked]  = useState(false);
   const [error,   setError]   = useState<string | null>(null);
 
-  // Pre-fill location from saved city
+  // Pre-fill from saved profile
   useEffect(() => {
-    if (user?.city) setLocation(user.city);
-  }, [user?.city]);
+    if (user?.address) setStreetArea(user.address);
+    if (user?.pincode) setPincode(user.pincode as string);
+    if (user?.name)    setContactName(user.name);
+  }, [user?.address, user?.name]);
 
   const calDays = getCalendarDays(calYear, calMonth);
 
@@ -82,11 +90,13 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
         try {
           const res  = await fetch(`https://nominatim.openstreetmap.org/reverse?lat=${coords.latitude}&lon=${coords.longitude}&format=json`);
           const data = await res.json();
-          const city = data.address?.city || data.address?.town || data.address?.village || "";
-          const road = data.address?.road || data.address?.suburb || "";
-          setLocation(road ? `${road}, ${city}` : city || `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+          const road    = data.address?.road || data.address?.suburb || data.address?.neighbourhood || "";
+          const city    = data.address?.city || data.address?.town || data.address?.village || "";
+          const pc      = data.address?.postcode || "";
+          setStreetArea(road ? `${road}${city ? ", " + city : ""}` : city || `${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+          if (pc) setPincode(pc.replace(/\s/g, "").slice(0, 6));
         } catch {
-          setLocation(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
+          setStreetArea(`${coords.latitude.toFixed(4)}, ${coords.longitude.toFixed(4)}`);
         } finally { setGpsLoading(false); }
       },
       () => { setGpsLoading(false); setError("Could not detect location. Please enter manually."); }
@@ -94,18 +104,24 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
   };
 
   const canProceed = selDay !== null && selWindow !== null;
-  const canBook    = canProceed && description.trim().length >= 10 && location.trim().length > 0;
+  const canBook    = canProceed && description.trim().length >= 10 && streetArea.trim().length > 0;
   const selectedWindow = TIME_WINDOWS.find(w => w.id === selWindow);
 
   const handleBooking = async () => {
     if (!canBook || !selDay || !selectedWindow) return;
     setLoading(true); setError(null);
+    const fullAddress = [
+      houseName.trim(),
+      streetArea.trim(),
+      contactName.trim() ? `Contact: ${contactName.trim()}` : "",
+      pincode.trim(),
+    ].filter(Boolean).join(", ");
     try {
       await bookingApi.create({
         workerId:     worker._id,
         service:      service.trim(),
         description:  description.trim(),
-        location:     location.trim(),
+        location:     fullAddress || location,
         scheduledAt:  toISO(calYear, calMonth, selDay, selectedWindow.hour),
         estimatedPay: worker.hourlyRate || 0,
         isUrgent,
@@ -290,30 +306,55 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
                     )}
                   </div>
 
-                  {/* Location */}
+                  {/* Address — structured */}
                   <div>
                     <div className="flex items-center justify-between mb-2">
-                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest">Your Location</label>
+                      <label className="text-[10px] font-black text-gray-400 uppercase tracking-widest flex items-center gap-1.5">
+                        <MapPin size={11} className="text-teal-500" /> Service Address
+                      </label>
                       <button type="button" onClick={handleUseMyLocation} disabled={gpsLoading}
                         className="flex items-center gap-1 text-[10px] font-black text-teal-600 hover:text-teal-700 uppercase tracking-wider disabled:opacity-50 transition-colors">
                         {gpsLoading ? <Loader2 size={11} className="animate-spin" /> : <Navigation size={11} />}
                         {gpsLoading ? "Detecting…" : "Use My Location"}
                       </button>
                     </div>
-                    <div className="relative">
-                      <MapPin size={14} className="absolute left-4 top-1/2 -translate-y-1/2 text-teal-400" />
+                    <div className="space-y-2">
+                      {/* Row 1: House Name + Contact Name */}
+                      <div className="grid grid-cols-2 gap-2">
+                        <input
+                          value={houseName}
+                          onChange={e => setHouseName(e.target.value)}
+                          placeholder="House / Flat No."
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-[#0F172A] placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-300 transition-all"
+                        />
+                        <input
+                          value={pincode}
+                          onChange={e => setPincode(e.target.value)}
+                          placeholder="Pincode"
+                          inputMode="numeric"
+                          maxLength={6}
+                          className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-[#0F172A] placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-300 transition-all"
+                        />
+                      </div>
+                      {/* Contact name */}
                       <input
-                        value={location}
-                        onChange={e => setLocation(e.target.value)}
-                        placeholder="Street, Area, City"
-                        className="w-full pl-10 pr-4 py-3 rounded-2xl border border-gray-300 text-sm font-bold text-[#0F172A] placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-300 transition-all"
+                        value={contactName}
+                        onChange={e => setContactName(e.target.value)}
+                        placeholder="Your Name (contact at door)"
+                        className="w-full px-3 py-2.5 rounded-xl border border-gray-200 text-sm font-medium text-[#0F172A] placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-300 transition-all"
                       />
+                      {/* Street/Area */}
+                      <div className="relative">
+                        <input
+                          value={streetArea}
+                          onChange={e => setStreetArea(e.target.value)}
+                          placeholder="Street / Area / Landmark *"
+                          className={`w-full px-3 py-2.5 rounded-xl border text-sm font-medium text-[#0F172A] placeholder-gray-300 focus:outline-none focus:ring-2 focus:ring-teal-100 focus:border-teal-300 transition-all ${
+                            streetArea.trim().length === 0 ? "border-gray-200" : "border-teal-300"
+                          }`}
+                        />
+                      </div>
                     </div>
-                    {user?.city && location === user.city && (
-                      <p className="text-[10px] text-teal-500 font-bold mt-1.5 flex items-center gap-1">
-                        <CheckCircle2 size={10} /> Using your registered city
-                      </p>
-                    )}
                   </div>
 
                   {/* Urgent toggle */}

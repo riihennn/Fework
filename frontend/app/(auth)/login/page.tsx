@@ -11,7 +11,9 @@ import { signIn } from "next-auth/react";
 import { useAuthStore } from "@/store/authStore";
 import { Ban } from "lucide-react";
 
-export default function LoginPage() {
+import { Suspense } from "react";
+
+function LoginContent() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const { login, isLoading, error, clearError } = useAuthStore();
@@ -211,5 +213,13 @@ export default function LoginPage() {
         </motion.div>
       </main>
     </div>
+  );
+}
+
+export default function LoginPage() {
+  return (
+    <Suspense fallback={<div className="min-h-screen bg-[#F8FAFC] flex items-center justify-center"><Loader2 className="animate-spin text-teal-600" size={32} /></div>}>
+      <LoginContent />
+    </Suspense>
   );
 }

@@ -58,6 +58,8 @@ const UserSchema = new Schema<IUser>(
       trim: true,
       default: "",
     },
+    // NOTE: For workers, address data lives in the Worker collection, not here.
+    // These fields are only used for client users.
     isVerified: {
       type: Boolean,
       default: false,
