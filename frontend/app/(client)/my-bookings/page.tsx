@@ -9,7 +9,7 @@ import {
   ChevronLeft, MessageSquare, AlertCircle, CreditCard
 } from "lucide-react";
 import { io } from "socket.io-client";
-import { bookingApi, reviewApi, ticketApi, BookingJob, API_BASE_URL } from "@/services/api";
+import { bookingApi, reviewApi, ticketApi, BookingJob, paymentApi, API_BASE_URL } from "@/services/api";
 import ChatBox from "@/components/shared/ChatBox";
 import { useAuthStore } from "@/store/authStore";
 
@@ -319,17 +319,56 @@ function ApprovalModal({
   onDone: () => void;
   onApproved: (jobId: string) => void;
 }) {
+  const { user } = useAuthStore();
   const [paymentMethod, setPaymentMethod] = useState<"cash" | "online" | null>(null);
   const [note, setNote] = useState("");
   const [loading, setLoading] = useState(false);
 
   const handleSubmit = async () => {
-    if (!paymentMethod || paymentMethod !== "cash") return;
+    if (!paymentMethod) return;
     setLoading(true);
     try {
-      await bookingApi.approveJob(job._id, "approve", note || undefined);
-      onApproved(job._id);
-      onClose();
+      if (paymentMethod === "cash") {
+        await bookingApi.approveJob(job._id, "approve", note || undefined);
+        onApproved(job._id);
+        onClose();
+      } else if (paymentMethod === "online") {
+        const orderRes = await paymentApi.createOrder(job._id);
+        const options = {
+          key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "dummy_key", 
+          amount: orderRes.order.amount,
+          currency: "INR",
+          name: "Fework",
+          description: `Payment for ${job.service}`,
+          order_id: orderRes.order.id,
+          handler: async function (response: any) {
+            try {
+              await paymentApi.verifyPayment({
+                razorpay_order_id: response.razorpay_order_id,
+                razorpay_payment_id: response.razorpay_payment_id,
+                razorpay_signature: response.razorpay_signature,
+                jobId: job._id
+              });
+              await bookingApi.approveJob(job._id, "approve", note || undefined);
+              onApproved(job._id);
+              onClose();
+            } catch (err: any) {
+              alert("Payment verification failed: " + err.message);
+            }
+          },
+          prefill: {
+            name: user?.name || (job.client as any).name || "User",
+            email: user?.email || (job.client as any).email || "",
+            contact: user?.phone || (job.client as any).phone || "",
+          },
+          theme: { color: "#0F172A" }
+        };
+        const rzp = new (window as any).Razorpay(options);
+        rzp.on("payment.failed", function (response: any) {
+          alert("Payment failed: " + response.error.description);
+        });
+        rzp.open();
+      }
     } catch (e: any) {
       alert(e.message);
     } finally {
@@ -399,17 +438,25 @@ function ApprovalModal({
               <p className="text-xs text-gray-400 mt-0.5">Pay directly to the worker.</p>
             </button>
 
-            {/* Pay Online — Disabled (Coming Soon) */}
-            <div className="relative">
-              <div className="p-4 rounded-2xl border-2 border-dashed border-gray-200 bg-gray-50 text-left opacity-60 cursor-not-allowed">
-                <div className="w-8 h-8 rounded-xl flex items-center justify-center mb-3 bg-gray-200">
-                  <CreditCard size={16} className="text-gray-400" />
-                </div>
-                <p className="font-bold text-sm text-gray-400">Pay Online</p>
-                <p className="text-xs text-gray-400 mt-0.5">UPI / Card payment.</p>
+            {/* Pay Online */}
+            <button
+              onClick={() => setPaymentMethod("online")}
+              className={`p-4 rounded-2xl border-2 text-left transition-all relative ${
+                paymentMethod === "online"
+                  ? "border-teal-500 bg-teal-50"
+                  : "border-gray-100 hover:border-teal-200 bg-white"
+              }`}
+            >
+              <div className={`w-8 h-8 rounded-xl flex items-center justify-center mb-3 ${
+                paymentMethod === "online" ? "bg-teal-500" : "bg-gray-100"
+              }`}>
+                <CreditCard size={16} className={paymentMethod === "online" ? "text-white" : "text-gray-500"} />
               </div>
-              <span className="absolute top-2 right-2 bg-gray-200 text-gray-500 text-[9px] font-black uppercase tracking-widest px-2 py-0.5 rounded-full">Soon</span>
-            </div>
+              <p className="font-bold text-sm text-[#0F172A]">Pay Online</p>
+              <p className="text-xs text-gray-400 mt-0.5">UPI / Card payment.</p>
+              
+              {/* Optional: Remove the "Soon" tag entirely */}
+            </button>
           </div>
         </div>
 
@@ -428,7 +475,7 @@ function ApprovalModal({
         <div className="p-8 pt-4">
           <button
             onClick={handleSubmit}
-            disabled={paymentMethod !== "cash" || loading}
+            disabled={!paymentMethod || loading}
             className="w-full py-3.5 rounded-2xl text-sm font-bold transition-all disabled:opacity-40 disabled:pointer-events-none flex items-center justify-center gap-2 bg-teal-600 hover:bg-teal-700 text-white shadow-md"
           >
             {loading ? <Loader2 size={16} className="animate-spin" /> : <><CheckCircle2 size={16} />Confirm &amp; Release Payment</>}

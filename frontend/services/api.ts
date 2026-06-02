@@ -222,7 +222,7 @@ export interface BookingJob {
   estimatedPay: number;
   actualPay?: number;
   isUrgent: boolean;
-  paymentMethod: "cash";
+  paymentMethod: "cash" | "online";
   paymentStatus: "pending" | "paid";
   workerNote?: string;
   clientApproval?: {
@@ -465,8 +465,8 @@ export const adminApi = {
   getTickets: () =>
     request<{ tickets: TicketData[] }>("/tickets", "GET"),
 
-  updateTicketStatus: (id: string, status: string) =>
-    request<{ ticket: TicketData }>(`/tickets/${id}/status`, "PATCH", { status }),
+  updateTicketStatus: (id: string, status: "open" | "in_progress" | "resolved" | "closed", adminReply?: string) =>
+    request<any>(`/tickets/${id}/status`, "PUT", { status, adminReply }),
     
   resolveTicket: (id: string, data: any) =>
     request<{ ticket: TicketData }>(`/tickets/${id}/respond`, "PATCH", data),
@@ -476,6 +476,14 @@ export const adminApi = {
 
   deleteTicket: (id: string) =>
     request<{ message: string }>(`/tickets/${id}`, "DELETE"),
+};
+
+// ─── Payment API ──────────────────────────────────────────────
+export const paymentApi = {
+  createOrder: (jobId: string) =>
+    request<{ order: any }>(`/payment/create-order`, "POST", { jobId }),
+  verifyPayment: (data: { razorpay_order_id: string; razorpay_payment_id: string; razorpay_signature: string; jobId: string }) =>
+    request<{ message: string }>(`/payment/verify`, "POST", data),
 };
 
 // ─── Support Ticket Types & API ─────────────────────────────────────

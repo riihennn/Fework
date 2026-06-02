@@ -202,7 +202,7 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
               className="flex items-center gap-3 pl-2 border-l border-gray-100 hover:bg-gray-50/50 p-1.5 rounded-2xl transition-all"
             >
               <div className="hidden md:flex flex-col items-end">
-                <span className="text-xs font-bold text-[#0F172A]">{user?.name || user?.email?.split("@")[0]}</span>
+                <span className="text-xs font-bold text-[#0F172A] capitalize">{user?.name || user?.email?.split("@")[0]}</span>
               </div>
               <Avatar src={(user as any)?.avatar} name={user?.name} size={36} className="rounded-xl border border-gray-200" />
               <ChevronDown size={14} className={`text-gray-400 transition-transform duration-300 ${isDropdownOpen ? "rotate-180" : ""}`} />

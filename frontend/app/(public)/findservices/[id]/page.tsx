@@ -103,7 +103,7 @@ export default async function WorkerProfilePage({ params }: PageProps) {
 
                 <div className="flex-1 min-w-0">
                   <div className="flex flex-wrap items-center gap-3 mb-2">
-                    <h1 className="text-2xl font-black text-[#0F172A] tracking-tight">{worker.user.name}</h1>
+                    <h1 className="text-2xl font-black text-[#0F172A] tracking-tight capitalize">{worker.user.name}</h1>
                     {worker.isElite && (
                       <div className="flex items-center gap-1 bg-amber-100 text-amber-700 px-2 py-0.5 rounded-md border border-amber-200">
                         <Star size={12} className="fill-amber-500 text-amber-500" />

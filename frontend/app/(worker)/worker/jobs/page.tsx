@@ -159,7 +159,7 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
               className="rounded-2xl shrink-0 shadow-sm border border-white"
             />
             <div className="flex-1 min-w-0">
-              <div className="font-black text-[#0F172A] text-lg mb-0.5 truncate">{clientInfo?.name || "Client"}</div>
+              <div className="font-black text-[#0F172A] text-lg mb-0.5 truncate capitalize">{clientInfo?.name || "Client"}</div>
               <div className="flex flex-col gap-1.5 mt-1 text-xs text-gray-500 font-medium">
                 {clientInfo?.phone && (
                   <span className="flex items-center gap-2"><Phone size={14} className="text-teal-500 shrink-0" /> {clientInfo.phone}</span>

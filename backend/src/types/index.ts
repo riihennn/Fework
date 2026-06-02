@@ -79,8 +79,11 @@ export interface IJob extends Document {
   isUrgent: boolean;
   isRevisit: boolean;
   revisitFor?: Types.ObjectId;
-  paymentMethod: "cash";
+  paymentMethod: "cash" | "online";
   paymentStatus: "pending" | "paid";
+  razorpayOrderId?: string;
+  razorpayPaymentId?: string;
+  razorpaySignature?: string;
   clientApproval?: IJobClientApproval;
   workerNote?: string;
   reviewed: boolean;

@@ -17,6 +17,7 @@ import messageRoutes from "./routes/message.routes";
 import skillRoutes from "./routes/skill.routes";
 import uploadRoutes from "./routes/upload.routes";
 import ticketRoutes from "./routes/ticket.routes";
+import paymentRoutes from "./routes/payment.routes";
 import http from "http";
 import { SocketService } from "./services/socket.service";
 
@@ -56,6 +57,7 @@ app.use("/api/messages", messageRoutes);
 app.use("/api/skills", skillRoutes);
 app.use("/api/upload", uploadRoutes);
 app.use("/api/tickets", ticketRoutes);
+app.use("/api/payment", paymentRoutes);
 
 // ── 404 Handler ──────────────────────────────────────────────
 app.use((_req, res) => {

@@ -166,14 +166,23 @@ export default function ChatBox({
               >
                 <ArrowLeft size={20} className="text-gray-600" />
               </button>
-              <div className="w-10 h-10 rounded-full bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 shrink-0">
-                <User size={20} />
+              <div className="flex items-center gap-3">
+                <div className="w-8 h-8 rounded-full bg-teal-50 border border-teal-100 flex items-center justify-center text-teal-600 shrink-0">
+                  <User size={16} />
+                </div>
+                <div>
+                  <h3 className="font-bold text-[#0F172A] text-sm leading-tight capitalize truncate w-48">{jobTitle}</h3>
+                  {readOnly ? (
+                    <p className="text-[10px] font-semibold text-gray-400">Chat closed</p>
+                  ) : (
+                    <div className="flex items-center gap-1.5 mt-0.5">
+                      <span className="w-1.5 h-1.5 bg-green-500 rounded-full animate-pulse" />
+                      <p className="text-[10px] font-bold text-gray-400 uppercase tracking-widest">Active</p>
+                    </div>
+                  )}
+                </div>
               </div>
-              <div className="flex-1 min-w-0">
-                <h3 className="font-semibold text-[#0F172A] truncate leading-tight">{jobTitle || "Chat"}</h3>
-                <p className="text-[11px] text-teal-500 font-medium">active now</p>
-              </div>
-              <div className="relative">
+              <div className="relative ml-auto">
                 <button
                   onClick={() => setShowMenu(!showMenu)}
                   className="p-1.5 rounded-full text-gray-400 hover:bg-gray-100 transition-all"

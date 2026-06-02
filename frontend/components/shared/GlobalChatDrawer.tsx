@@ -108,7 +108,7 @@ export default function GlobalChatDrawer({ isOpen: propIsOpen, onClose: propOnCl
         const workerInfo = typeof job.worker === "object" ? (job.worker as any).user : null;
         const otherParty = user?.role === "worker" ? job.client : workerInfo;
         const name = typeof otherParty === "object" ? (otherParty as any)?.name : "User";
-        setActiveChatJob({ id: job._id, title: name || "User", status: job.status });
+        setActiveChatJob({ id: job._id, title: `${name || "User"} — ${job.service}`, status: job.status });
       }
     }
   }, [activeChatJobId, jobs, user]);
@@ -206,7 +206,7 @@ export default function GlobalChatDrawer({ isOpen: propIsOpen, onClose: propOnCl
                     return (
                       <button
                         key={job._id}
-                        onClick={() => setActiveChatJob({ id: job._id, title: name || "User", status: job.status })}
+                        onClick={() => setActiveChatJob({ id: job._id, title: `${name || "User"} — ${job.service}`, status: job.status })}
                         className="w-full bg-white border-b border-gray-100 p-4 flex items-center gap-4 hover:bg-gray-50 transition-all text-left"
                       >
                         <Avatar
@@ -216,8 +216,13 @@ export default function GlobalChatDrawer({ isOpen: propIsOpen, onClose: propOnCl
                           className="rounded-full shrink-0"
                         />
                         <div className="flex-1 min-w-0">
-                          <div className="flex justify-between items-center mb-0.5">
-                            <h4 className="text-[15px] font-medium text-[#0F172A] truncate">{name || "User"}</h4>
+                          <div className="flex justify-between items-center mb-1">
+                            <h4 className="text-[14px] font-bold text-[#0F172A] truncate flex items-center gap-2">
+                              <span className="capitalize">{name || "User"}</span>
+                              <span className="text-[9px] font-black uppercase tracking-widest text-teal-600 px-1.5 py-0.5 bg-teal-50 border border-teal-100 rounded">
+                                {job.service}
+                              </span>
+                            </h4>
                             <span className="text-[11px] text-gray-400 shrink-0 ml-2">
                               {lastMsg ? new Date(lastMsg.createdAt).toLocaleDateString("en-GB", { day: '2-digit', month: '2-digit', year: 'numeric' }) : new Date(job.updatedAt).toLocaleDateString("en-GB", { day: '2-digit', month: '2-digit', year: 'numeric' })}
                             </span>
