@@ -5,7 +5,7 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation";
 import { adminApi, AdminBooking } from "@/services/api";
 import { Calendar, MapPin, Clock, Edit3, X, Zap } from "lucide-react";
 
-const STATUSES = ["all", "pending", "accepted", "in_progress", "awaiting_approval", "completed", "disputed", "cancelled"];
+const STATUSES = ["all", "pending", "accepted", "in_progress", "awaiting_approval", "disputed", "completed", "cancelled"];
 
 const STATUS_STYLE: Record<string, { bg: string; text: string; dot: string }> = {
   pending: { bg: "bg-amber-50", text: "text-amber-700", dot: "bg-amber-500" },
@@ -86,25 +86,25 @@ function AdminBookingsContent() {
         </div>
       </div>
 
-      {/* Filter Tabs */}
-      <div className="flex items-center gap-2 overflow-x-auto no-scrollbar pb-2">
-        {STATUSES.map((s) => {
-          const isActive = status === s;
-          const style = s !== "all" ? STATUS_STYLE[s] : { bg: "bg-gray-100", text: "text-gray-700", dot: "bg-gray-500" };
-          return (
-            <button
-              key={s}
-              onClick={() => { setStatus(s); setPage(1); }}
-              className={`flex items-center gap-2 px-4 py-2 rounded-xl text-xs font-bold uppercase tracking-widest whitespace-nowrap transition-all border ${isActive
-                  ? `${style.bg} ${style.text} border-transparent shadow-sm ring-1 ring-inset ring-${style.dot.replace('bg-', '')}/20`
-                  : "bg-white text-gray-500 border-gray-200 hover:bg-gray-50"
-                }`}
-            >
-              {s !== "all" && <span className={`w-2 h-2 rounded-full ${style.dot}`} />}
-              {s.replace(/_/g, " ")}
-            </button>
-          );
-        })}
+      {/* Status filter dropdown */}
+      <div className="flex items-center gap-3">
+        <label className="text-xs font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Status</label>
+        <div className="relative">
+          <select
+            value={status}
+            onChange={(e) => { setStatus(e.target.value); setPage(1); }}
+            className="appearance-none bg-white border border-gray-200 rounded-2xl pl-4 pr-10 py-2.5 text-sm font-semibold text-[#0F172A] shadow-sm outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 transition-all cursor-pointer min-w-[160px]"
+          >
+            {STATUSES.map((s) => (
+              <option key={s} value={s}>
+                {s === "all" ? "All Statuses" : s.replace(/_/g, " ").replace(/\b\w/g, c => c.toUpperCase())}
+              </option>
+            ))}
+          </select>
+          <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+            <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+          </div>
+        </div>
       </div>
 
       {/* Table */}

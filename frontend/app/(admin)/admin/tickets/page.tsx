@@ -54,7 +54,7 @@ export default function AdminTicketsPage() {
 
   const handleUpdateStatus = async (id: string, newStatus: string) => {
     try {
-      await adminApi.updateTicketStatus(id, newStatus);
+      await adminApi.updateTicketStatus(id, newStatus as "open" | "in_progress" | "resolved" | "closed");
       setTickets((prev) => prev.map((t) => t._id === id ? { ...t, status: newStatus as any } : t));
       if (selectedTicket && selectedTicket._id === id) {
         setSelectedTicket({ ...selectedTicket, status: newStatus as any });

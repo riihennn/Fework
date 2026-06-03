@@ -53,8 +53,11 @@ const JobSchema = new mongoose_1.Schema({
     isUrgent: { type: Boolean, default: false },
     isRevisit: { type: Boolean, default: false },
     revisitFor: { type: mongoose_1.Schema.Types.ObjectId, ref: "Job" },
-    paymentMethod: { type: String, enum: ["cash"], default: "cash" },
+    paymentMethod: { type: String, enum: ["cash", "online"], default: "cash" },
     paymentStatus: { type: String, enum: ["pending", "paid"], default: "pending" },
+    razorpayOrderId: { type: String },
+    razorpayPaymentId: { type: String },
+    razorpaySignature: { type: String },
     workerNote: { type: String, trim: true },
     clientApproval: {
         approved: { type: Boolean },

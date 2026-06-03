@@ -22,6 +22,7 @@ const message_routes_1 = __importDefault(require("./routes/message.routes"));
 const skill_routes_1 = __importDefault(require("./routes/skill.routes"));
 const upload_routes_1 = __importDefault(require("./routes/upload.routes"));
 const ticket_routes_1 = __importDefault(require("./routes/ticket.routes"));
+const payment_routes_1 = __importDefault(require("./routes/payment.routes"));
 const http_1 = __importDefault(require("http"));
 const socket_service_1 = require("./services/socket.service");
 const app = (0, express_1.default)();
@@ -54,6 +55,7 @@ app.use("/api/messages", message_routes_1.default);
 app.use("/api/skills", skill_routes_1.default);
 app.use("/api/upload", upload_routes_1.default);
 app.use("/api/tickets", ticket_routes_1.default);
+app.use("/api/payment", payment_routes_1.default);
 // ── 404 Handler ──────────────────────────────────────────────
 app.use((_req, res) => {
     res.status(404).json({ success: false, message: "Route not found." });

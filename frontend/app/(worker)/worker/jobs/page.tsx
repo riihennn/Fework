@@ -5,7 +5,8 @@ import { motion, AnimatePresence } from "framer-motion";
 import {
   Briefcase, Clock, CheckCircle2, XCircle, Loader2, MapPin,
   Calendar, RefreshCw, Zap, ChevronRight, AlertTriangle,
-  MessageSquare, User, Banknote, FileText, Send, CalendarClock, Play, Square, Timer, Phone
+  MessageSquare, User, Banknote, FileText, Send, CalendarClock, Play, Square, Timer, Phone,
+  Search, X
 } from "lucide-react";
 import { io } from "socket.io-client";
 import { bookingApi, ticketApi, BookingJob, JobStatus, API_BASE_URL } from "@/services/api";
@@ -27,6 +28,8 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string; bo
 };
 
 const STATUS_TABS = ["", "pending", "accepted", "in_progress", "awaiting_approval", "disputed", "completed", "cancelled"];
+const ACTIVE_STATUS_TABS = ["", "pending", "accepted", "in_progress", "awaiting_approval", "disputed"];
+const HISTORY_STATUS_TABS = ["", "completed", "cancelled"];
 
 // ─── Worker status transitions ─────────────────────────────────────────
 const WORKER_ACTIONS: Record<string, { label: string; next: string; icon: any; color: string }> = {
@@ -332,7 +335,10 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
 // ─── Main Page ─────────────────────────────────────────────────────────
 export default function JobsPage() {
   const { user } = useAuthStore();
+  const [activeTab, setActiveTab] = useState<"active" | "history">("active");
   const [activeStatus, setActiveStatus] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [jobs, setJobs] = useState<BookingJob[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -340,12 +346,19 @@ export default function JobsPage() {
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
-  const fetchJobs = useCallback(async (status: string, p: number, silent = false) => {
+  const fetchJobs = useCallback(async (tab: string, status: string, p: number, search: string, silent = false) => {
     if (!silent) setLoading(true);
     setError(null);
     try {
       const params: Record<string, string> = { page: String(p), limit: "10" };
-      if (status) params.status = status;
+      if (search) params.search = search;
+      if (status) {
+        params.status = status;
+      } else {
+        params.status = tab === "active" 
+          ? "pending,accepted,in_progress,awaiting_approval,disputed" 
+          : "completed,cancelled";
+      }
       const res = await bookingApi.getWorkerJobs(params);
       setJobs(res.jobs); setTotal(res.pagination.total); setPages(res.pagination.pages);
     } catch (e: any) { setError(e.message || "Failed to load jobs"); }
@@ -353,8 +366,8 @@ export default function JobsPage() {
   }, []);
 
   useEffect(() => {
-    fetchJobs(activeStatus, page);
-  }, [fetchJobs, activeStatus, page]);
+    fetchJobs(activeTab, activeStatus, page, searchQuery);
+  }, [fetchJobs, activeTab, activeStatus, page, searchQuery]);
 
   useEffect(() => {
     if (!user?._id) return;
@@ -367,17 +380,19 @@ export default function JobsPage() {
     });
 
     socket.on("new_booking", () => {
-      fetchJobs(activeStatus, page, true);
+      fetchJobs(activeTab, activeStatus, page, searchQuery, true);
     });
 
     socket.on("booking_updated", () => {
-      fetchJobs(activeStatus, page, true);
+      fetchJobs(activeTab, activeStatus, page, searchQuery, true);
     });
 
     return () => {
       socket.disconnect();
     };
-  }, [user, activeStatus, page, fetchJobs]);
+  }, [user, activeTab, activeStatus, page, searchQuery, fetchJobs]);
+
+  const currentTabs = activeTab === "active" ? ACTIVE_STATUS_TABS : HISTORY_STATUS_TABS;
 
   return (
     <div className="max-w-5xl space-y-8">
@@ -389,37 +404,77 @@ export default function JobsPage() {
             {total} {total === 1 ? "job" : "jobs"}
           </p>
         </div>
-        <button onClick={() => fetchJobs(activeStatus, page)}
+        <button onClick={() => fetchJobs(activeTab, activeStatus, page, searchQuery)}
           className="p-3 rounded-2xl bg-white border border-gray-100 text-gray-400 hover:text-teal-600 hover:border-teal-100 transition-all">
           <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
         </button>
       </div>
 
-      {/* Payment Flow Banner */}
-      <div className="bg-gradient-to-r from-teal-50 to-blue-50 border border-teal-100 rounded-[20px] p-5 flex items-center gap-4">
-        <Banknote size={24} className="text-teal-600 shrink-0" />
-        <div>
-          <p className="text-sm font-bold text-[#0F172A]">💵 Cash on Completion</p>
-          <p className="text-xs text-gray-500 mt-0.5">
-            Complete the job → submit for client review → client confirms → collect cash payment.
-            <strong className="text-teal-700"> Clients control final approval to prevent fraud.</strong>
-          </p>
-        </div>
+
+      {/* Tabs */}
+      <div className="flex items-center gap-6 border-b border-gray-200">
+        <button 
+          onClick={() => { setActiveTab("active"); setActiveStatus(""); setPage(1); }}
+          className={`pb-4 px-2 text-sm font-bold border-b-2 transition-all ${activeTab === "active" ? "border-teal-500 text-teal-600" : "border-transparent text-gray-500 hover:text-gray-800"}`}
+        >
+          Active Jobs
+        </button>
+        <button 
+          onClick={() => { setActiveTab("history"); setActiveStatus(""); setPage(1); }}
+          className={`pb-4 px-2 text-sm font-bold border-b-2 transition-all ${activeTab === "history" ? "border-teal-500 text-teal-600" : "border-transparent text-gray-500 hover:text-gray-800"}`}
+        >
+          History
+        </button>
       </div>
 
-      {/* Status filter tabs */}
-      <div className="flex flex-wrap gap-2">
-        {STATUS_TABS.map((tab) => {
-          const m = STATUS_META[tab];
-          return (
-            <button key={tab} onClick={() => { setActiveStatus(tab); setPage(1); }}
-              className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${
-                activeStatus === tab ? `${m.color} ${m.bg} ${m.border}` : "text-gray-400 bg-white border-gray-100 hover:border-gray-200"
-              }`}>
-              {m.label}
-            </button>
-          );
-        })}
+      {/* Status filter dropdown & Search Bar */}
+      <div className="flex items-center justify-between gap-4">
+        <div className="flex items-center gap-3">
+          <label className="text-xs font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Status</label>
+          <div className="relative">
+            <select
+              value={activeStatus}
+              onChange={(e) => { setActiveStatus(e.target.value); setPage(1); }}
+              className="appearance-none bg-white border border-gray-200 rounded-2xl pl-4 pr-10 py-2.5 text-sm font-semibold text-[#0F172A] shadow-sm outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 transition-all cursor-pointer min-w-[160px]"
+            >
+              {currentTabs.map((tab) => (
+                <option key={tab} value={tab}>{STATUS_META[tab].label}</option>
+              ))}
+            </select>
+            <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+              <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+            </div>
+          </div>
+        </div>
+
+        {activeTab === "history" && (
+          <div className="relative flex-1 max-w-sm">
+            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+              <Search size={16} className="text-gray-400" />
+            </div>
+            <input
+              type="text"
+              placeholder="Search bookings..."
+              value={searchInput}
+              onChange={(e) => setSearchInput(e.target.value)}
+              onKeyDown={(e) => {
+                if (e.key === "Enter") {
+                  setSearchQuery(searchInput);
+                  setPage(1);
+                }
+              }}
+              className="w-full bg-white border border-gray-200 rounded-2xl pl-10 pr-10 py-2.5 text-sm font-semibold text-[#0F172A] shadow-sm outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 transition-all"
+            />
+            {searchInput && (
+              <button 
+                onClick={() => { setSearchInput(""); setSearchQuery(""); setPage(1); }}
+                className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+              >
+                <X size={16} />
+              </button>
+            )}
+          </div>
+        )}
       </div>
 
       {error && (
@@ -444,7 +499,9 @@ export default function JobsPage() {
             </motion.div>
           ) : (
              jobs.map(job => (
-              <JobCard key={job._id} job={job} onAction={() => fetchJobs(activeStatus, page, true)} />
+              <div key={job._id} className="relative">
+                <JobCard job={job} onAction={() => fetchJobs(activeTab, activeStatus, page, searchQuery, true)} />
+              </div>
             ))
           )}
         </AnimatePresence>

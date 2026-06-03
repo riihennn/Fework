@@ -318,13 +318,40 @@ export const getWorkerBookings = async (
   next: NextFunction
 ) => {
   try {
-    const { status, page = "1", limit = "10" } = req.query;
+    const { status, page = "1", limit = "10", search } = req.query;
 
     const worker = await Worker.findOne({ user: req.user!.id });
     if (!worker) return sendError(res, "Worker profile not found", 404);
 
     const query: any = { worker: worker._id };
-    if (status) query.status = status;
+    if (status) {
+      const statusStr = String(status);
+      if (statusStr.includes(",")) {
+        query.status = { $in: statusStr.split(",") };
+      } else {
+        query.status = statusStr;
+      }
+    }
+
+    if (search) {
+      const searchRegex = new RegExp(String(search), "i");
+      
+      const matchingUsers = await User.find({
+        $or: [
+          { name: searchRegex },
+          { phone: searchRegex },
+          { email: searchRegex }
+        ]
+      }).select('_id');
+      const userIds = matchingUsers.map((u) => u._id);
+
+      query.$or = [
+        { service: searchRegex },
+        { location: searchRegex },
+        { description: searchRegex },
+        { client: { $in: userIds } }
+      ];
+    }
 
     const skip = (Number(page) - 1) * Number(limit);
 
@@ -361,10 +388,38 @@ export const getClientBookings = async (
   next: NextFunction
 ) => {
   try {
-    const { status, page = "1", limit = "10" } = req.query;
+    const { status, page = "1", limit = "10", search } = req.query;
 
     const query: any = { client: req.user!.id };
-    if (status) query.status = status;
+    if (status) {
+      const statusStr = String(status);
+      if (statusStr.includes(",")) {
+        query.status = { $in: statusStr.split(",") };
+      } else {
+        query.status = statusStr;
+      }
+    }
+
+    if (search) {
+      const searchRegex = new RegExp(String(search), "i");
+      
+      const matchingUsers = await User.find({
+        $or: [
+          { name: searchRegex },
+          { phone: searchRegex },
+          { email: searchRegex }
+        ]
+      }).select('_id');
+      const matchingWorkers = await Worker.find({ user: { $in: matchingUsers.map(u => u._id) } }).select('_id');
+      const workerIds = matchingWorkers.map((w) => w._id);
+
+      query.$or = [
+        { service: searchRegex },
+        { location: searchRegex },
+        { description: searchRegex },
+        { worker: { $in: workerIds } }
+      ];
+    }
 
     const skip = (Number(page) - 1) * Number(limit);
 

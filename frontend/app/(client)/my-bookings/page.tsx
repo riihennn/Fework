@@ -6,7 +6,7 @@ import {
   Briefcase, Clock, Loader2, MapPin, Calendar, RefreshCw,
   Zap, User, Banknote, CheckCircle2, AlertTriangle, FileText,
   Phone, Star, ChevronRight, X, XCircle, CalendarClock,
-  ChevronLeft, MessageSquare, AlertCircle, CreditCard
+  ChevronLeft, MessageSquare, AlertCircle, CreditCard, Search
 } from "lucide-react";
 import { io } from "socket.io-client";
 import { bookingApi, reviewApi, ticketApi, BookingJob, paymentApi, API_BASE_URL } from "@/services/api";
@@ -25,7 +25,9 @@ const STATUS_META: Record<string, { label: string; color: string; bg: string; bo
   cancelled:          { label: "Cancelled",          color: "text-gray-400",   bg: "bg-gray-50",     border: "border-gray-200",   dot: "bg-gray-300",   desc: "Booking was cancelled" },
 };
 
-const STATUS_TABS = ["", "pending", "accepted", "in_progress", "awaiting_approval", "completed", "disputed", "cancelled"];
+const STATUS_TABS = ["", "pending", "accepted", "in_progress", "awaiting_approval", "disputed", "completed", "cancelled"];
+const ACTIVE_STATUS_TABS = ["", "pending", "accepted", "in_progress", "awaiting_approval", "disputed"];
+const HISTORY_STATUS_TABS = ["", "completed", "cancelled"];
 
 const MONTHS = ["Jan","Feb","Mar","Apr","May","Jun","Jul","Aug","Sep","Oct","Nov","Dec"];
 const SLOTS  = ["9:00 AM","10:00 AM","11:00 AM","2:00 PM","3:00 PM","4:00 PM","5:00 PM"];
@@ -588,6 +590,7 @@ function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => voi
   const [showReview, setShowReview] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
   const [showReschedule, setShowReschedule] = useState(false);
+  const [showDetails, setShowDetails] = useState(false);
   const canModify = ["pending", "accepted"].includes(job.status);
   const canReschedule = canModify && (job.rescheduledCount ?? 0) < 1;
   const meta = STATUS_META[job.status] || STATUS_META[""];
@@ -704,7 +707,28 @@ function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => voi
                   )}
                 </div>
               </div>
-              <BillBreakdown job={job} />
+              <div className="mt-4">
+                <button
+                  onClick={() => setShowDetails(!showDetails)}
+                  className="flex items-center gap-1.5 text-xs font-bold text-gray-500 hover:text-gray-700 transition-colors"
+                >
+                  <ChevronRight size={14} className={`transform transition-transform ${showDetails ? "rotate-90" : ""}`} />
+                  {"View Bill Details"}
+                </button>
+                
+                <AnimatePresence>
+                  {showDetails && (
+                    <motion.div
+                      initial={{ height: 0, opacity: 0 }}
+                      animate={{ height: "auto", opacity: 1 }}
+                      exit={{ height: 0, opacity: 0 }}
+                      className="overflow-hidden mt-3"
+                    >
+                      <BillBreakdown job={job} />
+                    </motion.div>
+                  )}
+                </AnimatePresence>
+              </div>
             </div>
           )}
 
@@ -789,7 +813,10 @@ function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => voi
 
 // ─── Main Page ──────────────────────────────────────────────────────────
 export default function MyBookingsPage() {
+  const [activeTab, setActiveTab] = useState<"active" | "history">("active");
   const [activeStatus, setActiveStatus] = useState("");
+  const [searchQuery, setSearchQuery] = useState("");
+  const [searchInput, setSearchInput] = useState("");
   const [jobs, setJobs] = useState<BookingJob[]>([]);
   const [total, setTotal] = useState(0);
   const [page, setPage] = useState(1);
@@ -799,19 +826,26 @@ export default function MyBookingsPage() {
   const { user } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
 
-  const fetchJobs = useCallback(async (status: string, p: number, silent = false) => {
+  const fetchJobs = useCallback(async (tab: string, status: string, p: number, search: string, silent = false) => {
     if (!silent) setLoading(true);
     setError(null);
     try {
       const params: Record<string, string> = { page: String(p), limit: "10" };
-      if (status) params.status = status;
+      if (search) params.search = search;
+      if (status) {
+        params.status = status;
+      } else {
+        params.status = tab === "active" 
+          ? "pending,accepted,in_progress,awaiting_approval,disputed" 
+          : "completed,cancelled";
+      }
       const res = await bookingApi.getClientJobs(params);
       setJobs(res.jobs); setTotal(res.pagination.total); setPages(res.pagination.pages);
     } catch (e: any) { setError(e.message || "Failed to load bookings"); }
     finally { if (!silent) setLoading(false); }
   }, []);
 
-  useEffect(() => { fetchJobs(activeStatus, page); }, [activeStatus, page, fetchJobs]);
+  useEffect(() => { fetchJobs(activeTab, activeStatus, page, searchQuery); }, [activeTab, activeStatus, page, searchQuery, fetchJobs]);
 
   useEffect(() => {
     const handleOpenChat = (e: any) => setActiveChatJob(e.detail);
@@ -830,17 +864,19 @@ export default function MyBookingsPage() {
     });
 
     socket.on("new_booking", () => {
-      fetchJobs(activeStatus, page, true);
+      fetchJobs(activeTab, activeStatus, page, searchQuery, true);
     });
 
     socket.on("booking_updated", () => {
-      fetchJobs(activeStatus, page, true);
+      fetchJobs(activeTab, activeStatus, page, searchQuery, true);
     });
 
     return () => {
       socket.disconnect();
     };
-  }, [user, activeStatus, page, fetchJobs]);
+  }, [user, activeTab, activeStatus, page, searchQuery, fetchJobs]);
+
+  const currentTabs = activeTab === "active" ? ACTIVE_STATUS_TABS : HISTORY_STATUS_TABS;
 
   return (
     <div className="min-h-screen bg-[#f8f9fb]">
@@ -853,37 +889,76 @@ export default function MyBookingsPage() {
               {total} {total === 1 ? "booking" : "bookings"}
             </p>
           </div>
-          <button onClick={() => fetchJobs(activeStatus, page)}
+          <button onClick={() => fetchJobs(activeTab, activeStatus, page, searchQuery)}
             className="p-3 rounded-2xl bg-white border border-gray-100 text-gray-400 hover:text-teal-600 hover:border-teal-100 transition-all shadow-sm">
             <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
           </button>
         </div>
 
-        {/* How payment works banner */}
-        <div className="bg-gradient-to-r from-[#0F172A] to-[#1e293b] rounded-[20px] p-5 flex items-start gap-4">
-          <Banknote size={24} className="text-teal-400 shrink-0 mt-0.5" />
-          <div>
-            <p className="text-sm font-bold text-white">💵 How Payment Works</p>
-            <p className="text-xs text-gray-400 mt-1 leading-relaxed">
-              Payment is <strong className="text-teal-400">Cash on Completion</strong>. After the worker marks the job done,
-              you'll review their work here and confirm. <strong className="text-white">Only you can release payment</strong> — this protects you from fraud.
-            </p>
-          </div>
+        {/* Tabs */}
+        <div className="flex items-center gap-6 border-b border-gray-200">
+          <button 
+            onClick={() => { setActiveTab("active"); setActiveStatus(""); setPage(1); }}
+            className={`pb-4 px-2 text-sm font-bold border-b-2 transition-all ${activeTab === "active" ? "border-teal-500 text-teal-600" : "border-transparent text-gray-500 hover:text-gray-800"}`}
+          >
+            Active Jobs
+          </button>
+          <button 
+            onClick={() => { setActiveTab("history"); setActiveStatus(""); setPage(1); }}
+            className={`pb-4 px-2 text-sm font-bold border-b-2 transition-all ${activeTab === "history" ? "border-teal-500 text-teal-600" : "border-transparent text-gray-500 hover:text-gray-800"}`}
+          >
+            History
+          </button>
         </div>
 
-        {/* Status tabs */}
-        <div className="flex flex-wrap gap-2">
-          {STATUS_TABS.map((tab) => {
-            const m = STATUS_META[tab];
-            return (
-              <button key={tab} onClick={() => { setActiveStatus(tab); setPage(1); }}
-                className={`px-4 py-2 rounded-2xl text-[10px] font-black uppercase tracking-widest border transition-all ${
-                  activeStatus === tab ? `${m.color} ${m.bg} ${m.border}` : "text-gray-400 bg-white border-gray-100 hover:border-gray-200"
-                }`}>
-                {m.label}
-              </button>
-            );
-          })}
+        {/* Status dropdown filter & Search Bar */}
+        <div className="flex items-center justify-between gap-4">
+          <div className="flex items-center gap-3">
+            <label className="text-xs font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Status</label>
+            <div className="relative">
+              <select
+                value={activeStatus}
+                onChange={(e) => { setActiveStatus(e.target.value); setPage(1); }}
+                className="appearance-none bg-white border border-gray-200 rounded-2xl pl-4 pr-10 py-2.5 text-sm font-semibold text-[#0F172A] shadow-sm outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 transition-all cursor-pointer min-w-[160px]"
+              >
+                {currentTabs.map((tab) => (
+                  <option key={tab} value={tab}>{STATUS_META[tab].label}</option>
+                ))}
+              </select>
+              <div className="pointer-events-none absolute right-3 top-1/2 -translate-y-1/2 text-gray-400">
+                <svg width="14" height="14" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2.5" strokeLinecap="round" strokeLinejoin="round"><path d="m6 9 6 6 6-6"/></svg>
+              </div>
+            </div>
+          </div>
+
+          {activeTab === "history" && (
+            <div className="relative flex-1 max-w-sm">
+              <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+                <Search size={16} className="text-gray-400" />
+              </div>
+              <input
+                type="text"
+                placeholder="Search bookings..."
+                value={searchInput}
+                onChange={(e) => setSearchInput(e.target.value)}
+                onKeyDown={(e) => {
+                  if (e.key === "Enter") {
+                    setSearchQuery(searchInput);
+                    setPage(1);
+                  }
+                }}
+                className="w-full bg-white border border-gray-200 rounded-2xl pl-10 pr-10 py-2.5 text-sm font-semibold text-[#0F172A] shadow-sm outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 transition-all"
+              />
+              {searchInput && (
+                <button 
+                  onClick={() => { setSearchInput(""); setSearchQuery(""); setPage(1); }}
+                  className="absolute inset-y-0 right-0 pr-3 flex items-center text-gray-400 hover:text-gray-600"
+                >
+                  <X size={16} />
+                </button>
+              )}
+            </div>
+          )}
         </div>
 
         {error && (
@@ -908,7 +983,9 @@ export default function MyBookingsPage() {
               </motion.div>
             ) : (
               jobs.map(job => (
-                <BookingCard key={job._id} job={job} onRefresh={() => fetchJobs(activeStatus, page, true)} />
+                <div key={job._id} className="relative">
+                  <BookingCard job={job} onRefresh={() => fetchJobs(activeTab, activeStatus, page, searchQuery, true)} />
+                </div>
               ))
             )}
           </AnimatePresence>

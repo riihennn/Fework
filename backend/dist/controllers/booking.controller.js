@@ -278,13 +278,37 @@ exports.approveJob = approveJob;
  */
 const getWorkerBookings = async (req, res, next) => {
     try {
-        const { status, page = "1", limit = "10" } = req.query;
+        const { status, page = "1", limit = "10", search } = req.query;
         const worker = await Worker_model_1.default.findOne({ user: req.user.id });
         if (!worker)
             return (0, response_utils_1.sendError)(res, "Worker profile not found", 404);
         const query = { worker: worker._id };
-        if (status)
-            query.status = status;
+        if (status) {
+            const statusStr = String(status);
+            if (statusStr.includes(",")) {
+                query.status = { $in: statusStr.split(",") };
+            }
+            else {
+                query.status = statusStr;
+            }
+        }
+        if (search) {
+            const searchRegex = new RegExp(String(search), "i");
+            const matchingUsers = await User_model_1.default.find({
+                $or: [
+                    { name: searchRegex },
+                    { phone: searchRegex },
+                    { email: searchRegex }
+                ]
+            }).select('_id');
+            const userIds = matchingUsers.map((u) => u._id);
+            query.$or = [
+                { service: searchRegex },
+                { location: searchRegex },
+                { description: searchRegex },
+                { client: { $in: userIds } }
+            ];
+        }
         const skip = (Number(page) - 1) * Number(limit);
         const [jobs, total] = await Promise.all([
             Booking_model_1.default.find(query)
@@ -315,10 +339,35 @@ exports.getWorkerBookings = getWorkerBookings;
  */
 const getClientBookings = async (req, res, next) => {
     try {
-        const { status, page = "1", limit = "10" } = req.query;
+        const { status, page = "1", limit = "10", search } = req.query;
         const query = { client: req.user.id };
-        if (status)
-            query.status = status;
+        if (status) {
+            const statusStr = String(status);
+            if (statusStr.includes(",")) {
+                query.status = { $in: statusStr.split(",") };
+            }
+            else {
+                query.status = statusStr;
+            }
+        }
+        if (search) {
+            const searchRegex = new RegExp(String(search), "i");
+            const matchingUsers = await User_model_1.default.find({
+                $or: [
+                    { name: searchRegex },
+                    { phone: searchRegex },
+                    { email: searchRegex }
+                ]
+            }).select('_id');
+            const matchingWorkers = await Worker_model_1.default.find({ user: { $in: matchingUsers.map(u => u._id) } }).select('_id');
+            const workerIds = matchingWorkers.map((w) => w._id);
+            query.$or = [
+                { service: searchRegex },
+                { location: searchRegex },
+                { description: searchRegex },
+                { worker: { $in: workerIds } }
+            ];
+        }
         const skip = (Number(page) - 1) * Number(limit);
         const [jobs, total] = await Promise.all([
             Booking_model_1.default.find(query)
