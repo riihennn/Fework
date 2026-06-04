@@ -40,7 +40,7 @@ const featuredAd = {
   title: "Limited Time Offer!",
   subtitle: "Get 20% off your first service with code FEWORK20",
   cta: "Claim Now",
-  image: "/images/featured-ad.png",
+  image: "/images/featured-ad.jpg",
 };
 
 const applianceServices = [
@@ -481,7 +481,7 @@ export default function LandingPage() {
             </div>
             <div className="lg:w-1/2 min-h-[400px] relative">
               <img 
-                src="/images/wellness-bundle.png" 
+                src="/images/wellness-bundle.jpg" 
                 alt="Wellness Bundle" 
                 className="w-full h-full object-cover"
               />
@@ -517,7 +517,7 @@ export default function LandingPage() {
             </div>
             <div className="md:w-[45%] min-h-[300px] relative">
               <img 
-                src="/images/glowup.png" 
+                src="/images/glowup.jpg" 
                 alt="Interior Glow-up" 
                 className="w-full h-full object-cover"
               />
