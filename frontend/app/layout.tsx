@@ -8,7 +8,7 @@ import GoogleAuthSync from "@/components/shared/GoogleAuthSync";
 import NotificationListener from "@/components/shared/NotificationListener";
 
 export const metadata: Metadata = {
-  title: "Fework | Premium Service Network",
+  title: "Fework | Hyperlocal Service Marketplace",
   description: "Precision Home Services on Demand",
 };
 
