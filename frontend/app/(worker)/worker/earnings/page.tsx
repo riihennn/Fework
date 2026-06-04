@@ -51,7 +51,7 @@ function StatCard({
       initial={{ opacity: 0, y: 20 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ delay, duration: 0.4 }}
-      className="bg-white rounded-[24px] border border-gray-100 p-6 hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)] transition-all duration-300"
+      className="bg-white rounded-[24px] border border-gray-100 p-4 md:p-6 hover:shadow-[0_12px_40px_rgba(0,0,0,0.06)] transition-all duration-300"
     >
       <div className={`w-11 h-11 rounded-2xl flex items-center justify-center mb-4 ${color}`}>
         <Icon size={20} />
@@ -70,7 +70,7 @@ function TransactionRow({ tx, i }: { tx: EarningsData["recentTransactions"][0]; 
       initial={{ opacity: 0, x: -10 }}
       animate={{ opacity: 1, x: 0 }}
       transition={{ delay: i * 0.04, duration: 0.3 }}
-      className="flex items-center gap-4 py-4 border-b border-gray-50 last:border-0 group hover:bg-gray-50/60 -mx-6 px-6 transition-colors rounded-2xl"
+      className="flex items-center gap-3 md:gap-4 py-4 border-b border-gray-50 last:border-0 group hover:bg-gray-50/60 -mx-5 px-5 md:-mx-8 md:px-8 transition-colors rounded-2xl"
     >
       {/* Avatar */}
       <div className="w-10 h-10 rounded-xl bg-teal-50 border border-teal-100 flex items-center justify-center shrink-0">
@@ -159,21 +159,18 @@ export default function EarningsPage() {
   return (
     <div className="max-w-5xl space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0F172A] tracking-tight">Earnings</h1>
-          <p className="text-xs text-gray-400 uppercase tracking-widest mt-1 font-bold">
-            Cash · {summary.totalJobs} completed jobs
-          </p>
-        </div>
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+        <p className="text-xs text-gray-400 uppercase tracking-widest font-bold">
+          Cash · {summary.totalJobs} completed jobs
+        </p>
         <button onClick={fetchEarnings}
-          className="p-3 rounded-2xl bg-white border border-gray-100 text-gray-400 hover:text-teal-600 hover:border-teal-100 transition-all">
+          className="w-full sm:w-auto flex items-center justify-center p-3 rounded-2xl bg-white border border-gray-100 text-gray-400 hover:text-teal-600 hover:border-teal-100 transition-all">
           <RefreshCw size={18} />
         </button>
       </div>
 
       {/* Stats grid */}
-      <div className="grid grid-cols-2 lg:grid-cols-3 gap-4">
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
         <StatCard
           label="Total Earned" delay={0}
           value={`₹${summary.totalEarnings.toLocaleString()}`}
@@ -219,8 +216,8 @@ export default function EarningsPage() {
       </div>
 
       {/* Monthly chart */}
-      <div className="bg-white rounded-[28px] border border-gray-100 p-8">
-        <div className="flex items-center justify-between mb-8">
+      <div className="bg-white rounded-[24px] md:rounded-[28px] border border-gray-100 p-5 md:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-8">
           <div>
             <h2 className="font-black text-[#0F172A] text-lg">Monthly Overview</h2>
             <p className="text-xs text-gray-400 mt-0.5">Earnings from completed jobs · last 6 months</p>
@@ -240,8 +237,8 @@ export default function EarningsPage() {
       </div>
 
       {/* Recent transactions */}
-      <div className="bg-white rounded-[28px] border border-gray-100 p-8">
-        <div className="flex items-center justify-between mb-6">
+      <div className="bg-white rounded-[24px] md:rounded-[28px] border border-gray-100 p-5 md:p-8">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
           <div>
             <h2 className="font-black text-[#0F172A] text-lg">Recent Transactions</h2>
             <p className="text-xs text-gray-400 mt-0.5">Last {recentTransactions.length} completed payments</p>
@@ -249,7 +246,7 @@ export default function EarningsPage() {
           {summary.pendingEarnings > 0 && (
             <div className="flex items-center gap-2 px-3 py-1.5 rounded-full bg-orange-50 border border-orange-100">
               <Clock size={12} className="text-orange-500" />
-              <span className="text-xs font-bold text-orange-600">
+              <span className="text-xs font-bold text-orange-600 whitespace-nowrap">
                 ₹{summary.pendingEarnings.toLocaleString()} pending
               </span>
             </div>

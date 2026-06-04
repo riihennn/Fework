@@ -21,7 +21,7 @@ export default function PerformancePanel({ performance }: PerformancePanelProps)
 
   return (
     <div className="space-y-8">
-      <div className="bg-[#0F172A] rounded-[40px] p-10 text-white relative overflow-hidden shadow-2xl">
+      <div className="bg-[#0F172A] rounded-[24px] md:rounded-[40px] p-6 md:p-10 text-white relative overflow-hidden shadow-2xl">
         <div className="absolute top-0 right-0 w-32 h-32 bg-teal-500/10 rounded-full blur-3xl" />
         <h3 className="text-2xl font-bold mb-6 tracking-tight text-white">Performance Summary</h3>
         <div className="space-y-6">
@@ -50,7 +50,7 @@ export default function PerformancePanel({ performance }: PerformancePanelProps)
           { icon: Shield, title: "Identity Verified", desc: "Your KYC is complete", color: "bg-teal-50 text-teal-600 border-teal-100" },
           { icon: Award, title: "Elite Worker", desc: "Top 5% performer", color: "bg-blue-50 text-blue-600 border-blue-100" },
         ].map((badge, i) => (
-          <div key={i} className={`p-6 rounded-[28px] border flex items-center gap-5 ${badge.color} shadow-sm`}>
+          <div key={i} className={`p-4 md:p-6 rounded-[20px] md:rounded-[28px] border flex items-center gap-4 md:gap-5 ${badge.color} shadow-sm`}>
             <div className="w-12 h-12 rounded-2xl bg-white/50 backdrop-blur-md flex items-center justify-center shadow-sm">
               <badge.icon size={22} />
             </div>

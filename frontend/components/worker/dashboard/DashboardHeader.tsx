@@ -43,8 +43,8 @@ export default function DashboardHeader({ user, activeSection, setSidebarOpen }:
 
   return (
     <>
-      <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-8 py-5 flex items-center justify-between sticky top-0 z-30">
-        <div className="flex items-center gap-6">
+      <header className="bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 md:px-8 py-4 md:py-5 flex items-center justify-between sticky top-0 z-30">
+        <div className="flex items-center gap-4 md:gap-6">
           <button
             onClick={() => setSidebarOpen(true)}
             className="lg:hidden p-3 rounded-2xl hover:bg-gray-50 text-gray-400 transition-all active:scale-95"
@@ -52,8 +52,8 @@ export default function DashboardHeader({ user, activeSection, setSidebarOpen }:
             <Menu size={20} />
           </button>
           <div>
-            <h1 className="text-2xl font-bold text-[#0F172A] tracking-tight capitalize">{activeSection}</h1>
-            <p className="text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-0.5">
+            <h1 className="text-xl md:text-2xl font-bold text-[#0F172A] tracking-tight capitalize">{activeSection}</h1>
+            <p className="text-[9px] md:text-[10px] text-gray-400 font-bold uppercase tracking-[0.2em] mt-0.5">
               Welcome back, <span className="text-teal-600 capitalize">{user?.name?.split(" ")[0] || "Worker"}</span>
             </p>
           </div>

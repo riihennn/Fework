@@ -266,12 +266,8 @@ export default function WorkerSettings() {
 
   return (
     <div className="max-w-4xl mx-auto p-4 sm:p-8">
-      <div className="mb-8 flex justify-between items-end">
-        <div>
-          <h1 className="text-3xl font-bold tracking-tight text-gray-900">Settings</h1>
-          <p className="text-gray-500 mt-1">Manage your worker profile and preferences.</p>
-        </div>
-        <div className="flex items-center gap-3">
+      <div className="mb-6 flex justify-end">
+        <div className="flex items-center gap-3 w-full sm:w-auto">
           <button
             onClick={handleLogout}
             className="h-10 px-4 bg-rose-50 text-rose-500 rounded-xl font-bold text-sm hover:bg-rose-100 transition-all flex items-center gap-2"

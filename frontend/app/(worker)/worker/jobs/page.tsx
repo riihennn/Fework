@@ -140,7 +140,7 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
         {/* Status bar */}
         <div className={`h-1 ${meta.dot}`} />
 
-        <div className="p-6 md:p-7">
+        <div className="p-4 md:p-7">
           {/* Top Row: Status Badges */}
           <div className="flex items-center justify-between mb-4">
             <span className={`px-3 py-1 rounded-full text-[9px] font-black uppercase tracking-widest border ${meta.color} ${meta.bg} ${meta.border}`}>
@@ -253,7 +253,7 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
           )}
 
           {/* Footer: pay + actions */}
-          <div className="flex items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-5 sm:gap-4 border-t border-gray-100 pt-5 mt-2">
             <div>
               <div className="flex items-center gap-2">
                 <Banknote size={16} className="text-teal-500" />
@@ -274,15 +274,15 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
             </div>
 
             {/* Actions */}
-            <div className="flex gap-2 shrink-0">
+            <div className="flex flex-wrap gap-2 shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
               {job.status === "pending" && (
                 <>
                   <button onClick={() => handleAcceptDecline("decline")} disabled={!!loading}
-                    className="h-10 px-4 rounded-xl bg-gray-50 border border-gray-200 text-xs font-bold text-gray-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all disabled:opacity-50 flex items-center gap-1.5">
+                    className="flex-1 sm:flex-none h-10 px-4 rounded-xl bg-gray-50 border border-gray-200 text-xs font-bold text-gray-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5">
                     {loading === "decline" ? <Loader2 size={12} className="animate-spin" /> : <><XCircle size={12} />Decline</>}
                   </button>
                   <button onClick={() => handleAcceptDecline("accept")} disabled={!!loading}
-                    className="h-10 px-4 rounded-xl bg-[#0F172A] text-xs font-bold text-white hover:bg-teal-600 transition-all disabled:opacity-50 flex items-center gap-1.5">
+                    className="flex-1 sm:flex-none h-10 px-4 rounded-xl bg-[#0F172A] text-xs font-bold text-white hover:bg-teal-600 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5">
                     {loading === "accept" ? <Loader2 size={12} className="animate-spin" /> : <><CheckCircle2 size={12} />Accept</>}
                   </button>
                 </>
@@ -291,19 +291,17 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
               {showChat && (
                 <>
                   <button onClick={() => setActiveChatJob({ id: job._id, title: job.service })}
-                    className="h-10 px-4 rounded-xl bg-teal-50 border border-teal-100 text-xs font-bold text-teal-600 hover:bg-teal-100 hover:text-teal-700 transition-all flex items-center gap-1.5">
+                    className="flex-1 sm:flex-none h-10 px-4 rounded-xl bg-teal-50 border border-teal-100 text-xs font-bold text-teal-600 hover:bg-teal-100 hover:text-teal-700 transition-all flex items-center justify-center gap-1.5">
                     <MessageSquare size={12} /> Chat
                   </button>
                 </>
               )}
 
-
-
               {action && (
                 <button
                   onClick={() => action.next === "awaiting_approval" ? setShowNoteModal(true) : handleAdvance("")}
                   disabled={!!loading}
-                  className={`h-10 px-5 rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center gap-1.5 ${action.color}`}
+                  className={`flex-1 sm:flex-none h-10 px-5 rounded-xl text-xs font-bold transition-all disabled:opacity-50 flex items-center justify-center gap-1.5 ${action.color}`}
                 >
                   {loading === "advance" ? <Loader2 size={12} className="animate-spin" /> : <><action.icon size={12} />{action.label}</>}
                 </button>
@@ -398,12 +396,9 @@ export default function JobsPage() {
     <div className="max-w-5xl space-y-8">
       {/* Header */}
       <div className="flex items-center justify-between">
-        <div>
-          <h1 className="text-2xl font-bold text-[#0F172A] tracking-tight">My Jobs</h1>
-          <p className="text-xs text-gray-400 uppercase tracking-widest mt-1 font-bold">
-            {total} {total === 1 ? "job" : "jobs"}
-          </p>
-        </div>
+        <p className="text-xs text-gray-400 uppercase tracking-widest font-bold">
+          {total} {total === 1 ? "job" : "jobs"}
+        </p>
         <button onClick={() => fetchJobs(activeTab, activeStatus, page, searchQuery)}
           className="p-3 rounded-2xl bg-white border border-gray-100 text-gray-400 hover:text-teal-600 hover:border-teal-100 transition-all">
           <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
@@ -428,14 +423,14 @@ export default function JobsPage() {
       </div>
 
       {/* Status filter dropdown & Search Bar */}
-      <div className="flex items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+        <div className="flex items-center gap-3 w-full md:w-auto">
           <label className="text-xs font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Status</label>
-          <div className="relative">
+          <div className="relative flex-1 md:flex-none">
             <select
               value={activeStatus}
               onChange={(e) => { setActiveStatus(e.target.value); setPage(1); }}
-              className="appearance-none bg-white border border-gray-200 rounded-2xl pl-4 pr-10 py-2.5 text-sm font-semibold text-[#0F172A] shadow-sm outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 transition-all cursor-pointer min-w-[160px]"
+              className="appearance-none w-full bg-white border border-gray-200 rounded-2xl pl-4 pr-10 py-2.5 text-sm font-semibold text-[#0F172A] shadow-sm outline-none focus:border-teal-400 focus:ring-2 focus:ring-teal-400/20 transition-all cursor-pointer min-w-[160px]"
             >
               {currentTabs.map((tab) => (
                 <option key={tab} value={tab}>{STATUS_META[tab].label}</option>
