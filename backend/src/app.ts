@@ -30,8 +30,17 @@ const PORT = process.env.PORT || 5000;
 // ── Connect Database ─────────────────────────────────────────
 connectDB();
 
+import rateLimit from "express-rate-limit";
+
 // ── Global Middleware ────────────────────────────────────────
+const limiter = rateLimit({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  max: 100, // limit each IP to 100 requests per windowMs
+  standardHeaders: true,
+  legacyHeaders: false,
+});
 app.use(helmet());
+app.use(limiter);
 app.use(
   cors({
     origin: process.env.CLIENT_URL || "http://localhost:3000",

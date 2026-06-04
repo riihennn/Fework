@@ -1,6 +1,7 @@
 "use client";
 
 import React, { useState, useRef } from "react";
+import Image from "next/image";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -224,9 +225,9 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-6 gap-6">
-            {categories.map((cat, i) => (
+            {categories.map((cat) => (
               <motion.div
-                key={i}
+                key={cat.name}
                 whileHover={{ y: -4 }}
                 onClick={() => navigateCategory(cat.slug)}
                 className="bg-white border border-gray-100 rounded-2xl p-8 flex flex-col items-center justify-center gap-4 hover:shadow-lg transition-all cursor-pointer group"
@@ -248,9 +249,9 @@ export default function LandingPage() {
           
           <div className="relative">
             <div ref={spotlightRef} className="max-w-7xl mx-auto px-6 overflow-x-auto no-scrollbar pb-8 flex gap-6 scroll-smooth relative">
-              {spotlightCards.map((card, i) => (
+              {spotlightCards.map((card) => (
                 <motion.div
-                  key={i}
+                  key={card.title}
                   whileHover={{ y: -5 }}
                   className={`min-w-[320px] md:min-w-[450px] h-[280px] rounded-[32px] ${card.bgColor} overflow-hidden flex relative group cursor-pointer border border-gray-100 flex-shrink-0`}
                 >
@@ -268,7 +269,7 @@ export default function LandingPage() {
                     </Link>
                   </div>
                   <div className="w-1/2 h-full relative">
-                    <img src={card.image} alt={card.title} className="w-full h-full object-cover" />
+                    <Image src={card.image} alt={card.title} fill className="object-cover" />
                     <div className={`absolute inset-0 bg-gradient-to-r ${card.isDark ? 'from-black/40' : 'from-gray-100/40'} to-transparent md:hidden`}></div>
                   </div>
                 </motion.div>
@@ -315,8 +316,8 @@ export default function LandingPage() {
                     <div className="flex items-center gap-4 text-white/40">
                       <div className="flex -space-x-2">
                         {[1,2,3].map(i => (
-                          <div key={i} className="w-8 h-8 rounded-full border-2 border-[#0A1128] bg-gray-600 overflow-hidden">
-                            <img src={`https://images.unsplash.com/photo-${i === 1 ? '1535713875002-d1d0cf377fde' : i === 2 ? '1527980965255-d3b416303d12' : '1580489944761-15a19d654956'}?auto=format&fit=crop&q=80&w=100`} alt="User" />
+                          <div key={i} className="relative w-8 h-8 rounded-full border-2 border-[#0A1128] bg-gray-600 overflow-hidden">
+                            <Image src={`https://images.unsplash.com/photo-${i === 1 ? '1535713875002-d1d0cf377fde' : i === 2 ? '1527980965255-d3b416303d12' : '1580489944761-15a19d654956'}?auto=format&fit=crop&q=80&w=100`} alt="User" fill className="object-cover" />
                           </div>
                         ))}
                       </div>
@@ -331,10 +332,11 @@ export default function LandingPage() {
                     transition={{ duration: 0.6 }}
                     className="absolute inset-0"
                   >
-                    <img 
+                    <Image 
                       src={featuredAd.image} 
                       alt="Special Offer" 
-                      className="w-full h-full object-cover brightness-75 group-hover:brightness-90 transition-all duration-700"
+                      fill
+                      className="object-cover brightness-75 group-hover:brightness-90 transition-all duration-700"
                     />
                     <div className="absolute inset-0 bg-gradient-to-r from-[#0A1128] via-transparent to-transparent"></div>
                   </motion.div>
@@ -432,18 +434,19 @@ export default function LandingPage() {
           </div>
 
           <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-6">
-            {applianceServices.map((service, i) => (
+            {applianceServices.map((service) => (
               <motion.div
-                key={i}
+                key={service.name}
                 whileHover={{ y: -5 }}
                 onClick={() => navigateCategory(service.name === "AC Repair" ? "ac" : service.name.toLowerCase())}
                 className="group cursor-pointer"
               >
-                <div className="aspect-square rounded-2xl overflow-hidden mb-4 border border-gray-100">
-                  <img 
+                <div className="relative aspect-square rounded-2xl overflow-hidden mb-4 border border-gray-100">
+                  <Image 
                     src={service.image} 
                     alt={service.name} 
-                    className="w-full h-full object-cover group-hover:scale-110 transition-all duration-500" 
+                    fill
+                    className="object-cover group-hover:scale-110 transition-all duration-500" 
                   />
                 </div>
                 <h3 className="font-semibold text-gray-800 text-center">{service.name}</h3>
@@ -485,10 +488,11 @@ export default function LandingPage() {
               </button>
             </div>
             <div className="lg:w-1/2 min-h-[400px] relative">
-              <img 
+              <Image 
                 src="/images/wellness-bundle.jpg" 
                 alt="Wellness Bundle" 
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
               />
               <div className="absolute inset-0 bg-gradient-to-r from-[#F0FDF4] to-transparent lg:hidden"></div>
               
@@ -521,10 +525,11 @@ export default function LandingPage() {
               </button>
             </div>
             <div className="md:w-[45%] min-h-[300px] relative">
-              <img 
+              <Image 
                 src="/images/glowup.jpg" 
                 alt="Interior Glow-up" 
-                className="w-full h-full object-cover"
+                fill
+                className="object-cover"
               />
             </div>
           </motion.div>
