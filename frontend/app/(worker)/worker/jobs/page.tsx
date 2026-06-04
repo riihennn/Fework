@@ -102,11 +102,46 @@ function LiveTimer({ startedAt }: { startedAt: string }) {
   );
 }
 
+// ─── Decline Modal ─────────────────────────────────────────────────────
+function DeclineModal({
+  job, onSubmit, onClose
+}: { job: BookingJob; onSubmit: (reason: string) => void; onClose: () => void }) {
+  const [reason, setReason] = useState("");
+  return (
+    <div className="fixed inset-0 z-50 flex items-center justify-center bg-black/40 backdrop-blur-sm px-4">
+      <motion.div initial={{ opacity: 0, scale: 0.95 }} animate={{ opacity: 1, scale: 1 }}
+        className="bg-white rounded-[28px] shadow-2xl border border-gray-100 w-full max-w-md p-8">
+        <div className="flex items-center gap-3 mb-6">
+          <div className="w-10 h-10 rounded-xl bg-rose-50 flex items-center justify-center shrink-0">
+            <XCircle size={18} className="text-rose-500" />
+          </div>
+          <div>
+            <h3 className="font-bold text-[#0F172A] text-lg">Decline Booking</h3>
+            <p className="text-xs text-gray-400">Let the client know why (optional)</p>
+          </div>
+        </div>
+        <textarea
+          value={reason}
+          onChange={e => setReason(e.target.value)}
+          placeholder="e.g. Fully booked today, location is too far..."
+          rows={3}
+          className="w-full border border-gray-200 rounded-2xl p-4 text-sm resize-none focus:outline-none focus:ring-2 focus:ring-rose-400/30 focus:border-rose-400 transition-all"
+        />
+        <div className="flex gap-3 mt-6">
+          <button onClick={onClose} className="flex-1 h-12 rounded-2xl border border-gray-200 text-sm font-bold text-gray-500 hover:bg-gray-50 transition-all">Cancel</button>
+          <button onClick={() => onSubmit(reason)} className="flex-1 h-12 rounded-2xl bg-rose-500 text-white text-sm font-bold hover:bg-rose-600 transition-all">Decline Booking</button>
+        </div>
+      </motion.div>
+    </div>
+  );
+}
+
 // ─── Job Card ──────────────────────────────────────────────────────────
 function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
   const { user } = useAuthStore();
   const [loading, setLoading] = useState<string | null>(null);
   const [showNoteModal, setShowNoteModal] = useState(false);
+  const [showDeclineModal, setShowDeclineModal] = useState(false);
 
   const [errorModal, setErrorModal] = useState({ open: false, message: "" });
   const [activeChatJob, setActiveChatJob] = useState<{ id: string; title: string } | null>(null);
@@ -114,9 +149,10 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
   const action = WORKER_ACTIONS[job.status];
   const clientInfo = job.client as { name: string; email: string; phone?: string };
 
-  const handleAcceptDecline = async (act: "accept" | "decline") => {
+  const handleAcceptDecline = async (act: "accept" | "decline", reason?: string) => {
     setLoading(act);
-    try { await bookingApi.respond(job._id, act); onAction(); }
+    if (act === "decline") setShowDeclineModal(false);
+    try { await bookingApi.respond(job._id, act, reason); onAction(); }
     catch (e: any) { setErrorModal({ open: true, message: e.message || "Action failed" }); }
     finally { setLoading(null); }
   };
@@ -277,7 +313,7 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
             <div className="flex flex-wrap gap-2 shrink-0 w-full sm:w-auto mt-2 sm:mt-0">
               {job.status === "pending" && (
                 <>
-                  <button onClick={() => handleAcceptDecline("decline")} disabled={!!loading}
+                  <button onClick={() => setShowDeclineModal(true)} disabled={!!loading}
                     className="flex-1 sm:flex-none h-10 px-4 rounded-xl bg-gray-50 border border-gray-200 text-xs font-bold text-gray-500 hover:bg-rose-50 hover:text-rose-600 hover:border-rose-200 transition-all disabled:opacity-50 flex items-center justify-center gap-1.5">
                     {loading === "decline" ? <Loader2 size={12} className="animate-spin" /> : <><XCircle size={12} />Decline</>}
                   </button>
@@ -312,6 +348,7 @@ function JobCard({ job, onAction }: { job: BookingJob; onAction: () => void }) {
       </motion.div>
 
       {showNoteModal && <WorkerNoteModal job={job} onSubmit={handleAdvance} onClose={() => setShowNoteModal(false)} />}
+      {showDeclineModal && <DeclineModal job={job} onSubmit={(reason) => handleAcceptDecline("decline", reason)} onClose={() => setShowDeclineModal(false)} />}
 
       <StatusErrorModal 
         isOpen={errorModal.open} 

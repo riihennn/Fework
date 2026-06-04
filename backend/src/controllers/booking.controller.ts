@@ -90,7 +90,7 @@ export const respondToBooking = async (
 ) => {
   try {
     const { jobId } = req.params;
-    const { action } = req.body; // "accept" | "decline"
+    const { action, reason } = req.body; // "accept" | "decline"
 
     if (!["accept", "decline"].includes(action)) {
       return sendError(res, "Action must be 'accept' or 'decline'", 400);
@@ -113,6 +113,9 @@ export const respondToBooking = async (
     }
 
     job.status = action === "accept" ? "accepted" : "cancelled";
+    if (action === "decline" && reason) {
+      job.workerNote = `Declined by worker: ${reason}`;
+    }
     await job.save();
 
     // 🔔 Notify the client via SSE (future: when client SSE is implemented)

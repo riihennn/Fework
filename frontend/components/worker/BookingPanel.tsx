@@ -138,6 +138,25 @@ export default function BookingPanel({ worker }: { worker: WorkerPublic }) {
   };
 
   // ── Render ─────────────────────────────────────────────────────────────
+  if (!worker.isAvailable) {
+    return (
+      <div className="space-y-5 lg:sticky lg:top-24 lg:self-start">
+        <motion.div
+          initial={{ opacity: 0, y: 20 }} animate={{ opacity: 1, y: 0 }}
+          className="bg-white rounded-[32px] border border-gray-100 p-8 shadow-[0_8px_32px_rgba(0,0,0,0.04)] text-center flex flex-col items-center justify-center min-h-[350px]"
+        >
+          <div className="w-20 h-20 rounded-full bg-gray-50 flex items-center justify-center mb-5 mx-auto ring-8 ring-gray-50/50">
+            <AlertCircle size={32} className="text-gray-300" />
+          </div>
+          <h3 className="font-black text-[#0F172A] text-xl mb-2">Currently Offline</h3>
+          <p className="text-gray-400 text-xs font-bold leading-relaxed max-w-[200px] mx-auto">
+            This professional is not accepting new bookings at the moment.
+          </p>
+        </motion.div>
+      </div>
+    );
+  }
+
   return (
     <div className="space-y-5 lg:sticky lg:top-24 lg:self-start">
       <motion.div

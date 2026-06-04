@@ -271,8 +271,8 @@ export const bookingApi = {
   },
 
   // PUT /api/bookings/:jobId/respond
-  respond: (jobId: string, action: "accept" | "decline") =>
-    request<{ status: string }>(`/bookings/${jobId}/respond`, "PUT", { action }),
+  respond: (jobId: string, action: "accept" | "decline", reason?: string) =>
+    request<{ status: string }>(`/bookings/${jobId}/respond`, "PUT", { action, reason }),
 
   // PUT /api/bookings/:jobId/status (worker advances status)
   updateStatus: (jobId: string, status: string, opts?: { actualPay?: number; workerNote?: string }) =>

@@ -748,6 +748,17 @@ function BookingCard({ job, onRefresh, onReview }: { job: BookingJob; onRefresh:
             </div>
           )}
 
+          {/* Cancelled */}
+          {job.status === "cancelled" && job.workerNote && (
+            <div className="mb-5 p-4 bg-gray-50 border border-gray-200 rounded-2xl flex items-start gap-3">
+              <AlertCircle size={16} className="text-gray-500 shrink-0 mt-0.5" />
+              <div>
+                <p className="text-xs font-bold text-gray-600 uppercase tracking-wider mb-1">Cancellation Reason</p>
+                <p className="text-sm text-gray-700">{job.workerNote}</p>
+              </div>
+            </div>
+          )}
+
           {/* Meta info */}
           <div className="flex flex-wrap gap-4 text-xs text-gray-400 font-medium mb-6">
             <span className="flex items-center gap-1.5"><MapPin size={12} className="text-teal-500" />{job.location}</span>
