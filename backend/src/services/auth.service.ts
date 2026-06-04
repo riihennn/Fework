@@ -40,8 +40,7 @@ export const sendSignupOTP = async (email: string): Promise<{ message: string, o
   await sendOTPEmail({ to: email, otp });
 
   return { 
-    message: "An OTP has been sent to your email address.",
-    otp // Temporary: return OTP directly to frontend
+    message: "An OTP has been sent to your email address."
   };
 };
 

@@ -271,7 +271,7 @@ function ClientSignupForm() {
                 </div>
                 <h2 className="text-2xl font-bold text-[#0F172A]">Verify Your Email</h2>
                 <p className="text-gray-500 text-sm max-w-sm mx-auto">
-                  We've sent a 6-digit code to <span className="font-bold text-[#0F172A]">{formData.email}</span>. Please enter it below.
+                  We've sent a 6-digit code to <span className="font-bold text-[#0F172A]">{formData.email}</span>.<br/>Check your spam or junk folder if you don't see it. <br /> Please enter it below.
                 </p>
 
                 <form onSubmit={handleVerifyOTP} className="space-y-6 mt-8">
@@ -292,9 +292,10 @@ function ClientSignupForm() {
                   >
                     {isLoading ? <Loader2 className="animate-spin" size={20} /> : "Verify Account"}
                   </button>
+                  
                 </form>
 
-                <div className="pt-6">
+                <div className="pt-2">
                   <p className="text-sm text-gray-500">
                     Didn't receive the code?{" "}
                     <button 

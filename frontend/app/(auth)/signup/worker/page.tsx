@@ -447,6 +447,10 @@ function WorkerSignupForm() {
                   >
                     {isLoading ? <Loader2 className="animate-spin" size={20} /> : "Verify Account"}
                   </button>
+                  
+                  <p className="text-center text-xs text-gray-500">
+                    Check your spam or junk folder if you don't see it.
+                  </p>
                 </form>
 
                 <div className="pt-6">
