@@ -12,6 +12,7 @@ import { io } from "socket.io-client";
 import { bookingApi, reviewApi, ticketApi, BookingJob, paymentApi, BACKEND_URL } from "@/services/api";
 import ChatBox from "@/components/shared/ChatBox";
 import { useAuthStore } from "@/store/authStore";
+import Link from "next/link";
 
 // ─── Status Config ──────────────────────────────────────────────────────
 const STATUS_META: Record<string, { label: string; color: string; bg: string; border: string; dot: string; desc: string }> = {
@@ -596,9 +597,8 @@ function ReviewModal({
 
 
 // ─── Booking Card ──────────────────────────────────────────────────────
-function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => void }) {
+function BookingCard({ job, onRefresh, onReview }: { job: BookingJob; onRefresh: () => void; onReview: (jobId: string) => void }) {
   const [showModal, setShowModal] = useState(false);
-  const [showReview, setShowReview] = useState(false);
   const [showCancel, setShowCancel] = useState(false);
   const [showReschedule, setShowReschedule] = useState(false);
   const [showDetails, setShowDetails] = useState(false);
@@ -609,7 +609,7 @@ function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => voi
 
   const handleApproved = (jobId: string) => {
     onRefresh();
-    setShowReview(true); // Auto-open review modal after approval
+    onReview(jobId); // Auto-open review modal after approval at the page level
   };
 
   return (
@@ -622,9 +622,12 @@ function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => voi
         <div className="p-6 md:p-7">
           {/* Header */}
           <div className="flex items-start justify-between gap-4 mb-5">
-            <div className="flex items-center gap-4">
+            <Link 
+              href={job.worker ? `/findservices/${(job.worker as any)._id}` : "#"}
+              className="flex items-center gap-4 group transition-all"
+            >
               {/* Worker avatar */}
-              <div className="w-14 h-14 rounded-2xl bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center">
+              <div className="w-14 h-14 rounded-2xl bg-gray-100 overflow-hidden shrink-0 flex items-center justify-center group-hover:shadow-md transition-shadow">
                 {workerUser?.avatar
                   ? <img src={workerUser.avatar} alt={workerUser.name} className="w-full h-full object-cover" />
                   : <User size={24} className="text-gray-300" />
@@ -632,14 +635,16 @@ function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => voi
               </div>
               <div>
                 <p className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-0.5">Service Provider</p>
-                <div className="font-bold text-[#0F172A] text-base">{workerUser?.name || "Professional"}</div>
+                <div className="font-bold text-[#0F172A] text-base  transition-colors">
+                  {workerUser?.name || "Professional"}
+                </div>
                 {workerUser?.phone && (
                   <div className="flex items-center gap-1 text-xs text-gray-400 mt-0.5">
                     <Phone size={10} />{workerUser.phone}
                   </div>
                 )}
               </div>
-            </div>
+            </Link>
             <div className="flex items-center gap-2 shrink-0">
               {job.isUrgent && (
                 <span className="flex items-center gap-1 px-2.5 py-1 rounded-full bg-rose-50 text-rose-600 text-[9px] font-black uppercase tracking-widest border border-rose-100">
@@ -707,7 +712,7 @@ function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => voi
                 </div>
                 <div className="ml-auto shrink-0">
                   {!job.reviewed ? (
-                    <button onClick={() => setShowReview(true)}
+                    <button onClick={() => onReview(job._id)}
                       className="h-8 px-3 rounded-xl bg-teal-100 text-teal-700 text-xs font-bold hover:bg-teal-200 transition-all flex items-center gap-1.5">
                       <Star size={12} />Rate Worker
                     </button>
@@ -814,7 +819,6 @@ function BookingCard({ job, onRefresh }: { job: BookingJob; onRefresh: () => voi
 
       <AnimatePresence>
         {showModal && <ApprovalModal job={job} onClose={() => setShowModal(false)} onDone={onRefresh} onApproved={handleApproved} />}
-        {showReview && <ReviewModal jobId={job._id} onClose={() => setShowReview(false)} onDone={onRefresh} />}
         {showCancel && <CancelModal job={job} onClose={() => setShowCancel(false)} onDone={onRefresh} />}
         {showReschedule && <RescheduleModal job={job} onClose={() => setShowReschedule(false)} onDone={onRefresh} />}
       </AnimatePresence>
@@ -834,6 +838,7 @@ export default function MyBookingsPage() {
   const [pages, setPages] = useState(1);
   const [loading, setLoading] = useState(true);
   const [activeChatJob, setActiveChatJob] = useState<{ id: string; title: string; status: string } | null>(null);
+  const [reviewJobId, setReviewJobId] = useState<string | null>(null);
   const { user } = useAuthStore();
   const [error, setError] = useState<string | null>(null);
 
@@ -900,10 +905,6 @@ export default function MyBookingsPage() {
               {total} {total === 1 ? "booking" : "bookings"}
             </p>
           </div>
-          <button onClick={() => fetchJobs(activeTab, activeStatus, page, searchQuery)}
-            className="p-3 rounded-2xl bg-white border border-gray-100 text-gray-400 hover:text-teal-600 hover:border-teal-100 transition-all shadow-sm">
-            <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
-          </button>
         </div>
 
         {/* Tabs */}
@@ -995,7 +996,11 @@ export default function MyBookingsPage() {
             ) : (
               jobs.map(job => (
                 <div key={job._id} className="relative">
-                  <BookingCard job={job} onRefresh={() => fetchJobs(activeTab, activeStatus, page, searchQuery, true)} />
+                  <BookingCard 
+                    job={job} 
+                    onRefresh={() => fetchJobs(activeTab, activeStatus, page, searchQuery, true)} 
+                    onReview={(id) => setReviewJobId(id)}
+                  />
                 </div>
               ))
             )}
@@ -1016,6 +1021,19 @@ export default function MyBookingsPage() {
           </div>
         )}
       </main>
+
+      <AnimatePresence>
+        {reviewJobId && (
+          <ReviewModal 
+            jobId={reviewJobId} 
+            onClose={() => setReviewJobId(null)} 
+            onDone={() => {
+              setReviewJobId(null);
+              fetchJobs(activeTab, activeStatus, page, searchQuery, true);
+            }} 
+          />
+        )}
+      </AnimatePresence>
 
       <ChatBox
         isOpen={!!activeChatJob}

@@ -395,14 +395,10 @@ export default function JobsPage() {
   return (
     <div className="max-w-5xl space-y-8">
       {/* Header */}
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between mb-2">
         <p className="text-xs text-gray-400 uppercase tracking-widest font-bold">
           {total} {total === 1 ? "job" : "jobs"}
         </p>
-        <button onClick={() => fetchJobs(activeTab, activeStatus, page, searchQuery)}
-          className="p-3 rounded-2xl bg-white border border-gray-100 text-gray-400 hover:text-teal-600 hover:border-teal-100 transition-all">
-          <RefreshCw size={18} className={loading ? "animate-spin" : ""} />
-        </button>
       </div>
 
 

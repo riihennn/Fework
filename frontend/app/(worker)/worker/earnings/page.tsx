@@ -159,14 +159,10 @@ export default function EarningsPage() {
   return (
     <div className="max-w-5xl space-y-8">
       {/* Header */}
-      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-2">
         <p className="text-xs text-gray-400 uppercase tracking-widest font-bold">
           Cash · {summary.totalJobs} completed jobs
         </p>
-        <button onClick={fetchEarnings}
-          className="w-full sm:w-auto flex items-center justify-center p-3 rounded-2xl bg-white border border-gray-100 text-gray-400 hover:text-teal-600 hover:border-teal-100 transition-all">
-          <RefreshCw size={18} />
-        </button>
       </div>
 
       {/* Stats grid */}
