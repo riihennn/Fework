@@ -4,7 +4,7 @@ import React, { useEffect, useState, useRef } from "react";
 import { motion, AnimatePresence } from "framer-motion";
 import { X, Send, Loader2, ArrowLeft, CheckCheck, User, MoreVertical } from "lucide-react";
 import { io, Socket } from "socket.io-client";
-import { messageApi, ChatMessage, API_BASE_URL } from "../../services/api";
+import { messageApi, ChatMessage, API_BASE_URL, BACKEND_URL } from "../../services/api";
 import { useNotificationStore } from "../../store/notificationStore";
 
 interface ChatBoxProps {
@@ -89,7 +89,7 @@ export default function ChatBox({
 
     loadMessages();
 
-    const socketURL = API_BASE_URL.replace("/api", "");
+    const socketURL = BACKEND_URL.replace("/api", "");
     const socket = io(socketURL, { withCredentials: true });
     socketRef.current = socket;
 

@@ -1,5 +1,5 @@
-const API_BASE = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
-
+export const BACKEND_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+const API_BASE = "/proxy-api";
 // ─── Types ───────────────────────────────────────────────────────
 export interface AuthUser {
   _id: string;
@@ -292,7 +292,7 @@ export const bookingApi = {
 };
 
 // ─── SSE Helper ───────────────────────────────────────────────
-export const API_BASE_URL = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5001/api";
+export const API_BASE_URL = "/proxy-api";
 
 // ─── Review API ──────────────────────────────────────────
 export interface ReviewData {

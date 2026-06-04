@@ -22,6 +22,7 @@ import http from "http";
 import { SocketService } from "./services/socket.service";
 
 const app = express();
+app.set("trust proxy", 1);
 const server = http.createServer(app);
 export const socketService = new SocketService(server);
 const PORT = process.env.PORT || 5000;
