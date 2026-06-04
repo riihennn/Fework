@@ -7,39 +7,35 @@ import { useAuthStore } from "@/store/authStore";
 
 export default function GoogleAuthSync() {
   const { data: session, status } = useSession();
-  const { isAuthenticated, googleLogin } = useAuthStore();
+  const isAuthenticated = useAuthStore((s) => s.isAuthenticated);
   const router = useRouter();
   const pathname = usePathname();
   const hasAttemptedSync = useRef(false);
 
   useEffect(() => {
-    const syncGoogleAuth = async () => {
-      // Don't interfere with the signup registration flow — those pages handle Google themselves
-      if (pathname.startsWith("/signup")) return;
+    // Don't interfere with the signup registration flow — those pages handle Google themselves
+    if (pathname.startsWith("/signup")) return;
 
-      if (status === "authenticated" && session?.user?.email && !isAuthenticated && !hasAttemptedSync.current) {
-        hasAttemptedSync.current = true;
-        // Attempt to log in to the custom backend using Google email
-        const success = await googleLogin(session.user.email);
-        
+    if (status === "authenticated" && session?.user?.email && !isAuthenticated && !hasAttemptedSync.current) {
+      hasAttemptedSync.current = true;
+
+      // Attempt to log in to the custom backend using Google email
+      useAuthStore.getState().googleLogin(session.user.email).then((success) => {
         if (success) {
-          // Redirect based on role after successful sync
           const { user } = useAuthStore.getState();
-          if (user?.role === "worker") {
-            router.push("/worker");
-          } else {
-            router.push("/");
-          }
+          router.push(user?.role === "worker" ? "/worker" : "/");
         } else {
-          // If the user is not registered, sign them out of NextAuth so session is cleared and redirect to login
-          await signOut({ redirect: false });
-          router.push("/login");
+          // Not registered — sign them out of NextAuth and redirect to login
+          signOut({ redirect: false }).then(() => router.push("/login"));
         }
-      }
-    };
+      });
+    }
 
-    syncGoogleAuth();
-  }, [status, session, isAuthenticated, googleLogin, router, pathname]);
+    // Reset the guard if user logs out so Google sync works again on next login
+    if (status === "unauthenticated") {
+      hasAttemptedSync.current = false;
+    }
+  }, [status, session?.user?.email, isAuthenticated, pathname]); // Only stable primitives in deps
 
   return null;
 }

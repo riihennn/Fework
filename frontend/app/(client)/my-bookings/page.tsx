@@ -9,7 +9,7 @@ import {
   ChevronLeft, MessageSquare, AlertCircle, CreditCard, Search
 } from "lucide-react";
 import { io } from "socket.io-client";
-import { bookingApi, reviewApi, ticketApi, BookingJob, paymentApi, API_BASE_URL } from "@/services/api";
+import { bookingApi, reviewApi, ticketApi, BookingJob, paymentApi, BACKEND_URL } from "@/services/api";
 import ChatBox from "@/components/shared/ChatBox";
 import { useAuthStore } from "@/store/authStore";
 
@@ -336,6 +336,17 @@ function ApprovalModal({
         onClose();
       } else if (paymentMethod === "online") {
         const orderRes = await paymentApi.createOrder(job._id);
+
+        // Load the Razorpay script on-demand only when needed
+        await new Promise<void>((resolve, reject) => {
+          if ((window as any).Razorpay) return resolve();
+          const script = document.createElement("script");
+          script.src = "https://checkout.razorpay.com/v1/checkout.js";
+          script.onload = () => resolve();
+          script.onerror = () => reject(new Error("Failed to load Razorpay"));
+          document.body.appendChild(script);
+        });
+
         const options = {
           key: process.env.NEXT_PUBLIC_RAZORPAY_KEY_ID || "dummy_key", 
           amount: orderRes.order.amount,
@@ -856,7 +867,7 @@ export default function MyBookingsPage() {
   useEffect(() => {
     if (!user?._id) return;
 
-    const socketURL = API_BASE_URL.replace("/api", "");
+    const socketURL = BACKEND_URL.replace("/api", "");
     const socket = io(socketURL, { withCredentials: true });
 
     socket.on("connect", () => {

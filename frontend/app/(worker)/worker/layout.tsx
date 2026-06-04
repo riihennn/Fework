@@ -17,7 +17,7 @@ export default function WorkerLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { user, logout, isAuthenticated, restoreSession } = useAuthStore();
+  const { user, logout, isAuthenticated, isLoading, isSessionRestored } = useAuthStore();
   const router = useRouter();
   const pathname = usePathname();
 
@@ -29,12 +29,6 @@ export default function WorkerLayout({
 
   // Derive active section from pathname
   const activeSection = pathname.split("/").pop() || "overview";
-
-  useEffect(() => {
-    if (!isAuthenticated) {
-      restoreSession().catch(() => router.push("/login"));
-    }
-  }, [isAuthenticated, restoreSession, router]);
 
   useEffect(() => {
     if (isAuthenticated && user?.role === "worker") {
@@ -112,12 +106,20 @@ export default function WorkerLayout({
     }
   };
 
-  if (!isAuthenticated && !user) {
+  // While session is being restored, show a centered spinner.
+  // We wait for isSessionRestored (not just isLoading) so we don't flicker back
+  // to the spinner after the persisted store rehydrates from localStorage.
+  if (!isSessionRestored || isLoading) {
     return (
       <div className="min-h-screen bg-white flex items-center justify-center">
         <div className="w-12 h-12 border-4 border-teal-500 border-t-transparent rounded-full animate-spin" />
       </div>
     );
+  }
+
+  // Session restored and user is NOT authenticated — middleware will redirect, but just in case
+  if (!isAuthenticated) {
+    return null;
   }
 
   return (

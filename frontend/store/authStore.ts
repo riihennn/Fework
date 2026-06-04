@@ -8,6 +8,7 @@ interface AuthState {
   user: AuthUser | null;
   isAuthenticated: boolean;
   isLoading: boolean;
+  isSessionRestored: boolean; // true once restoreSession() has completed (success OR fail)
   error: string | null;
 }
 
@@ -42,6 +43,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
       user: null,
       isAuthenticated: false,
       isLoading: false,
+      isSessionRestored: false,
       error: null,
 
       // ── Login ──────────────────────────────────────────────────
@@ -118,19 +120,27 @@ export const useAuthStore = create<AuthState & AuthActions>()(
         } catch {
           // ignore
         } finally {
-          set({ user: null, isAuthenticated: false });
+          set({ user: null, isAuthenticated: false, isSessionRestored: false });
           useNotificationStore.getState().clearNotifications();
         }
       },
 
       // ── Restore session from backend (via httpOnly cookie) ─────
       restoreSession: async () => {
+        // Guard: only run once per app lifecycle
+        if (useAuthStore.getState().isSessionRestored) return;
         set({ isLoading: true });
         try {
-          const user = await authApi.me();
-          set({ user, isAuthenticated: true, isLoading: false });
+          // Race the API call against a 10-second timeout so we never hang
+          const user = await Promise.race([
+            authApi.me(),
+            new Promise<never>((_, reject) =>
+              setTimeout(() => reject(new Error("Session restore timeout")), 10000)
+            ),
+          ]);
+          set({ user, isAuthenticated: true, isLoading: false, isSessionRestored: true });
         } catch {
-          set({ user: null, isAuthenticated: false, isLoading: false });
+          set({ user: null, isAuthenticated: false, isLoading: false, isSessionRestored: true });
         }
       },
 
@@ -139,6 +149,7 @@ export const useAuthStore = create<AuthState & AuthActions>()(
     }),
     {
       name: "fework-auth", // localStorage key
+      // NOTE: do NOT persist isLoading or isSessionRestored — they reset fresh every page load
       partialize: (state) => ({ user: state.user, isAuthenticated: state.isAuthenticated }),
     }
   )

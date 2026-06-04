@@ -9,7 +9,7 @@ import {
   Search, X
 } from "lucide-react";
 import { io } from "socket.io-client";
-import { bookingApi, ticketApi, BookingJob, JobStatus, API_BASE_URL } from "@/services/api";
+import { bookingApi, ticketApi, BookingJob, JobStatus, BACKEND_URL } from "@/services/api";
 import StatusErrorModal from "@/components/worker/dashboard/StatusErrorModal";
 import ChatBox from "@/components/shared/ChatBox";
 import Avatar from "@/components/shared/Avatar";
@@ -372,7 +372,7 @@ export default function JobsPage() {
   useEffect(() => {
     if (!user?._id) return;
 
-    const socketURL = API_BASE_URL.replace("/api", "");
+    const socketURL = BACKEND_URL.replace("/api", "");
     const socket = io(socketURL, { withCredentials: true });
 
     socket.on("connect", () => {

@@ -1,15 +1,17 @@
 "use client";
 
-import { useEffect } from "react";
+import { useEffect, useRef } from "react";
 import { useAuthStore } from "@/store/authStore";
 
-// Silently restore the session from the backend httpOnly cookie on every page load
+// Silently restore the session from the backend httpOnly cookie on mount — runs once only.
 export default function SessionRestorer() {
-  const restoreSession = useAuthStore((s) => s.restoreSession);
+  const called = useRef(false);
 
   useEffect(() => {
-    restoreSession();
-  }, [restoreSession]);
+    if (called.current) return;
+    called.current = true;
+    useAuthStore.getState().restoreSession();
+  }, []);
 
   return null;
 }
