@@ -44,6 +44,11 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
+  // ── Always allow our custom API proxy ──
+  if (pathname.startsWith("/proxy-api")) {
+    return NextResponse.next();
+  }
+
   // ── ADMIN: locked to /admin/* ────────────────────────────────
   if (userRole === "admin") {
     if (!pathname.startsWith("/admin")) {
