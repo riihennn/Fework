@@ -1,6 +1,6 @@
 "use client";
 
-import React, { useState } from "react";
+import React, { useState, useRef } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { motion } from "framer-motion";
@@ -17,6 +17,7 @@ import {
   Calendar,
   MessageSquare,
   ArrowRight,
+  ArrowLeft,
   ShieldCheck,
   MapPin,
   Clock,
@@ -146,8 +147,16 @@ const spotlightCards = [
 
 export default function LandingPage() {
   const router = useRouter();
+  const spotlightRef = useRef<HTMLDivElement>(null);
+
   const navigateSearch = (term: string) => router.push(`/findservices?search=${encodeURIComponent(term)}`);
   const navigateCategory = (cat: string) => router.push(`/findservices?category=${encodeURIComponent(cat)}`);
+
+  const scrollSpotlight = (dir: 'left' | 'right') => {
+    if (spotlightRef.current) {
+      spotlightRef.current.scrollBy({ left: dir === 'right' ? 500 : -500, behavior: 'smooth' });
+    }
+  };
 
   return (
     <div className="min-h-screen bg-white flex flex-col font-sans">
@@ -238,7 +247,7 @@ export default function LandingPage() {
           </div>
           
           <div className="relative">
-            <div className="max-w-7xl mx-auto px-6 overflow-x-auto no-scrollbar pb-8 flex gap-6 scroll-smooth">
+            <div ref={spotlightRef} className="max-w-7xl mx-auto px-6 overflow-x-auto no-scrollbar pb-8 flex gap-6 scroll-smooth relative">
               {spotlightCards.map((card, i) => (
                 <motion.div
                   key={i}
@@ -265,10 +274,6 @@ export default function LandingPage() {
                 </motion.div>
               ))}
               
-              {/* Fake navigation arrow for aesthetic */}
-              <div className="absolute right-10 top-1/2 -translate-y-1/2 w-14 h-14 bg-white rounded-full shadow-xl border border-gray-100 hidden lg:flex items-center justify-center text-gray-800 cursor-pointer hover:bg-gray-50 transition-all z-20">
-                <ArrowRight size={24} />
-              </div>
             </div>
           </div>
         </section>
