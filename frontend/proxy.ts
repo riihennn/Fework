@@ -79,12 +79,12 @@ export function proxy(request: NextRequest) {
     return NextResponse.next();
   }
 
-  // ── GUEST: limited public access ────────────────────────────
   const isGuestAllowed =
     pathname === "/" ||
     pathname === "/findservices" ||
     pathname === "/login" ||
-    pathname.startsWith("/signup");
+    pathname.startsWith("/signup") ||
+    pathname.startsWith("/images");
 
   if (!isGuestAllowed) {
     // Guests hitting any other route go to login
@@ -97,6 +97,6 @@ export function proxy(request: NextRequest) {
 export const config = {
   // Run on every route except Next.js internals and static files
   matcher: [
-    "/((?!_next/static|_next/image|favicon.ico).*)",
+    "/((?!_next/static|_next/image|favicon.ico|images/).*)",
   ],
 };
