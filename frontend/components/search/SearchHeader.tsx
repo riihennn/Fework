@@ -128,10 +128,9 @@ export default function SearchHeader({ totalWorkers }: { totalWorkers: number })
             </div>
           </div>
 
-          {/* Button */}
           <button
             onClick={handleSearch}
-            className="h-12 md:h-14 px-10 bg-[#0F172A] text-white text-[10px] font-black uppercase tracking-widest items-center justify-center hover:bg-slate-800 transition-all cursor-pointer rounded-2xl md:ml-3 shrink-0 shadow-sm"
+            className="h-12 md:h-14 px-10 bg-[#0F172A] text-white text-[10px] font-black uppercase tracking-widest flex items-center justify-center hover:bg-slate-800 transition-all cursor-pointer rounded-2xl md:ml-3 shrink-0 shadow-sm mt-2 md:mt-0 w-full md:w-auto"
           >
             Find Services
           </button>

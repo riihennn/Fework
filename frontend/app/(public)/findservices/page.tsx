@@ -50,7 +50,7 @@ export default async function FindServicePage({ searchParams }: PageProps) {
       <div className="flex max-w-[1300px] mx-auto min-h-screen px-4 md:px-6 lg:px-8 gap-6 lg:gap-10">
         <FilterSidebar />
 
-        <main className="flex-1 py-6 md:px-4 lg:px-6 bg-gray-50/30">
+        <main className="flex-1 min-w-0 py-6 md:px-4 lg:px-6 bg-gray-50/30">
           <SearchHeader totalWorkers={totalWorkers} />
 
           {error && (

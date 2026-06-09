@@ -9,19 +9,13 @@ import {
   Search, ArrowRight, Inbox, FolderOpen, Unlink,
   Cog, Zap, Droplets, Paintbrush, Shield
 } from "lucide-react";
+import { request } from "@/services/api";
 
 // ── API ───────────────────────────────────────────────────────────────────
-const API = process.env.NEXT_PUBLIC_API_URL || "http://localhost:5000/api";
-
 async function apiFetch(path: string, opts: RequestInit = {}) {
-  const res = await fetch(`${API}${path}`, {
-    credentials: "include",
-    headers: { "Content-Type": "application/json", ...opts.headers },
-    ...opts,
-  });
-  const json = await res.json();
-  if (!res.ok) throw new Error(json.message || "Request failed");
-  return json.data;
+  const method = (opts.method as any) || "GET";
+  const body = opts.body ? JSON.parse(opts.body as string) : undefined;
+  return await request(path, method, body, opts.headers as Record<string, string>);
 }
 
 // ── Icon helpers ───────────────────────────────────────────────────────────

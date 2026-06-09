@@ -2,7 +2,7 @@
 
 import React, { useState, useRef, useEffect } from "react";
 import Link from "next/link";
-import { Bell, UserCircle, LogOut, Briefcase, Settings, ChevronDown, Clock, MessageSquare, Trash2, AlertTriangle } from "lucide-react";
+import { Bell, UserCircle, LogOut, Briefcase, Settings, ChevronDown, Clock, MessageSquare, Trash2, AlertTriangle, Menu, X } from "lucide-react";
 import { useAuthStore } from "@/store/authStore";
 import { useRouter } from "next/navigation";
 import { motion, AnimatePresence } from "framer-motion";
@@ -20,6 +20,7 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
   const router = useRouter();
   const [isDropdownOpen, setIsDropdownOpen] = useState(false);
   const [isNotificationsOpen, setIsNotificationsOpen] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
   const dropdownRef = useRef<HTMLDivElement>(null);
   const notificationsRef = useRef<HTMLDivElement>(null);
 
@@ -55,9 +56,17 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
 
   return (
     <>
-    <nav className={`bg-white/80 backdrop-blur-md border-b border-gray-100 px-6 py-4 flex items-center justify-between sticky top-0 z-50 ${className || ""}`}>
-      <div className="flex items-center gap-12">
-        <Link href="/" className="text-2xl font-bold text-[#0F172A] tracking-tight flex items-center gap-0.5">
+    <nav className={`bg-white/80 backdrop-blur-md border-b border-gray-100 px-4 md:px-6 py-4 flex items-center justify-between sticky top-0 z-50 ${className || ""}`}>
+      <div className="flex items-center gap-4 lg:gap-12">
+        {showLinks && (
+          <button 
+            className="lg:hidden p-2 -ml-2 text-gray-600 hover:text-[#0F172A]"
+            onClick={() => setIsMobileMenuOpen(true)}
+          >
+            <Menu size={24} />
+          </button>
+        )}
+        <Link href="/" className="text-xl md:text-2xl font-bold text-[#0F172A] tracking-tight flex items-center gap-0.5">
           Fework<span className="w-1.5 h-1.5 rounded-full bg-teal-600 mt-2" />
         </Link>
         {showLinks && (
@@ -281,6 +290,54 @@ export const Navbar = ({ className, showLinks = true }: NavbarProps) => {
         )}
       </div>
     </nav>
+
+    {/* Mobile Nav Drawer */}
+    <AnimatePresence>
+      {isMobileMenuOpen && (
+        <>
+          <motion.div
+            initial={{ opacity: 0 }}
+            animate={{ opacity: 1 }}
+            exit={{ opacity: 0 }}
+            onClick={() => setIsMobileMenuOpen(false)}
+            className="fixed inset-0 bg-black/20 backdrop-blur-sm z-[60] lg:hidden"
+          />
+          <motion.div
+            initial={{ x: "-100%" }}
+            animate={{ x: 0 }}
+            exit={{ x: "-100%" }}
+            transition={{ type: "spring", damping: 25, stiffness: 200 }}
+            className="fixed top-0 left-0 bottom-0 w-[280px] bg-white z-[70] shadow-2xl flex flex-col lg:hidden"
+          >
+            <div className="p-4 border-b border-gray-100 flex items-center justify-between">
+              <Link href="/" onClick={() => setIsMobileMenuOpen(false)} className="text-xl font-bold text-[#0F172A] tracking-tight flex items-center gap-0.5">
+                Fework<span className="w-1.5 h-1.5 rounded-full bg-teal-600 mt-2" />
+              </Link>
+              <button onClick={() => setIsMobileMenuOpen(false)} className="p-2 text-gray-400 hover:text-gray-600 bg-gray-50 rounded-full transition-colors">
+                <X size={20} />
+              </button>
+            </div>
+            
+            <div className="flex-1 overflow-y-auto p-4 flex flex-col gap-2">
+              <Link href="/findservices" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl transition-all">Find Services</Link>
+              <Link href="/membership" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl transition-all">Memberships</Link>
+              <Link href="/help" onClick={() => setIsMobileMenuOpen(false)} className="px-4 py-3 text-sm font-bold text-gray-700 hover:bg-gray-50 rounded-xl transition-all">Help</Link>
+              
+              {!isAuthenticated && (
+                <div className="mt-4 pt-4 border-t border-gray-100 flex flex-col gap-2">
+                  <Link href="/login" onClick={() => setIsMobileMenuOpen(false)} className="w-full h-11 flex items-center justify-center text-sm font-bold text-[#0F172A] hover:bg-gray-50 rounded-xl transition-all border border-gray-200">
+                    Log in
+                  </Link>
+                  <Link href="/signup" onClick={() => setIsMobileMenuOpen(false)} className="w-full h-11 flex items-center justify-center text-sm font-bold bg-[#0F172A] text-white hover:bg-gray-900 rounded-xl transition-all shadow-lg shadow-gray-200">
+                    Sign up
+                  </Link>
+                </div>
+              )}
+            </div>
+          </motion.div>
+        </>
+      )}
+    </AnimatePresence>
     
     {isAuthenticated && (
       <GlobalChatDrawer />

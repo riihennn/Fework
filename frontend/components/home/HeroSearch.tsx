@@ -95,10 +95,10 @@ export default function HeroSearch({ initialQuery = "", initialCity = "" }: Hero
             : "0 20px 40px rgba(0,0,0,0.2)",
         }}
         transition={{ duration: 0.2 }}
-        className="bg-white rounded-full p-2 flex items-center"
+        className="bg-white sm:rounded-full rounded-3xl p-2 flex flex-col sm:flex-row sm:items-center gap-2 sm:gap-0"
       >
         {/* What input */}
-        <div className="pl-5 flex items-center gap-3 flex-grow min-w-0">
+        <div className="pl-3 sm:pl-5 flex items-center gap-3 flex-grow min-w-0">
           <Search
             size={20}
             className={`shrink-0 transition-colors duration-200 ${
@@ -136,7 +136,7 @@ export default function HeroSearch({ initialQuery = "", initialCity = "" }: Hero
         </div>
 
         {/* Divider + city */}
-        <div className="hidden sm:flex items-center gap-2 px-3 border-l border-gray-200 ml-2">
+        <div className="flex items-center gap-2 px-3 border-t sm:border-t-0 sm:border-l border-gray-100 sm:border-gray-200 sm:ml-2 pt-2 sm:pt-0">
           <MapPin size={15} className="text-gray-400 shrink-0" />
           <input
             type="text"
@@ -150,7 +150,7 @@ export default function HeroSearch({ initialQuery = "", initialCity = "" }: Hero
 
         <button
           onClick={handleSearch}
-          className="bg-[#006D77] text-white px-7 py-3 rounded-full font-bold hover:bg-[#005a63] active:scale-95 transition-all shrink-0 flex items-center gap-2 ml-1"
+          className="w-full sm:w-auto justify-center bg-[#006D77] text-white px-7 py-3 rounded-2xl sm:rounded-full font-bold hover:bg-[#005a63] active:scale-95 transition-all shrink-0 flex items-center gap-2 sm:ml-1"
         >
           Search
           <ArrowRight size={16} />

@@ -657,7 +657,7 @@ function WorkerSignupForm() {
                         )}
                       </div>
 
-                      <div className="grid grid-cols-2 gap-4">
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
                         <div className="space-y-2">
                           <label className="text-sm font-bold text-[#0F172A] ml-1">Experience (Years)</label>
                           <div className="relative group">
@@ -713,7 +713,7 @@ function WorkerSignupForm() {
                       <p className="text-gray-500 text-sm">Almost there! Complete your identity verification.</p>
                     </div>
 
-                    <div className="grid grid-cols-2 gap-8 mb-8">
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-8 mb-8">
                       <CloudinaryUpload
                         label="Profile Photo"
                         sublabel="Optional"

@@ -665,7 +665,7 @@ function BookingCard({ job, onRefresh, onReview }: { job: BookingJob; onRefresh:
           {/* Awaiting approval — call to action */}
           {job.status === "awaiting_approval" && (
             <div className="mb-5 p-4 bg-orange-50 border border-orange-200 rounded-2xl">
-              <div className="flex items-start justify-between gap-4">
+              <div className="flex flex-col sm:flex-row sm:items-start justify-between gap-4">
                 <div className="flex items-start gap-3">
                   <AlertTriangle size={18} className="text-orange-500 shrink-0 mt-0.5" />
                   <div>
@@ -935,8 +935,8 @@ export default function MyBookingsPage() {
         </div>
 
         {/* Status dropdown filter & Search Bar */}
-        <div className="flex items-center justify-between gap-4">
-          <div className="flex items-center gap-3">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+          <div className="flex flex-col sm:flex-row sm:items-center gap-3">
             <label className="text-xs font-black text-gray-400 uppercase tracking-widest whitespace-nowrap">Status</label>
             <div className="relative">
               <select

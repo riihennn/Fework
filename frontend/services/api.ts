@@ -69,7 +69,7 @@ export interface WorkerDashboardData {
 }
 
 // ─── Core fetch helper ────────────────────────────────────────────
-const request = async <T>(
+export const request = async <T>(
   path: string,
   method: "GET" | "POST" | "PUT" | "DELETE" | "PATCH" = "GET",
   body?: unknown,
