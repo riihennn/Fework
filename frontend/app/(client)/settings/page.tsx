@@ -114,13 +114,14 @@ export default function SettingsPage() {
         body: formData,
       });
 
+      console.log("Cloudinary HTTP Status:", res.status, res.statusText);
       const data = await res.json();
       if (data.secure_url) {
         await authApi.updateProfile({ avatar: data.secure_url });
         await restoreSession();
         showMessage("Avatar updated successfully!");
       } else {
-        throw new Error("Cloudinary upload failed");
+        throw new Error(data.error?.message || "Cloudinary upload failed");
       }
     } catch (err) {
       console.error(err);
