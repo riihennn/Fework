@@ -355,8 +355,8 @@ export default function SkillsCMSPage() {
     try {
       setLoading(true);
       const [catData, skillData] = await Promise.all([
-        apiFetch("/skills/categories"),
-        apiFetch("/skills"),
+        apiFetch("/skills/categories") as Promise<SkillCategory[]>,
+        apiFetch("/skills") as Promise<{ skills: Skill[], ungrouped: Skill[], grouped: GroupedEntry[] }>,
       ]);
       setCategories(catData);
       setAllSkills(skillData.skills);
