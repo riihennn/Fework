@@ -212,7 +212,10 @@ npm run dev
 MERN Stack Developer
 
 LinkedIn:
-https://www.linkedin.com/in/rihenkrishna/
+https://www.linkedin.com/in/rihenkrishn
+
+Personal Portfolio:
+https://rihen.vercel.app
 
 Live Project:
 https://fework.vercel.app
